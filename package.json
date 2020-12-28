@@ -30,6 +30,7 @@
     "test:prettier": "prettier \"src/**/*.ts\" --list-different",
     "test:spelling": "cspell \"{README.md,.github/*.md,src/**/*.ts}\"",
     "test:unit": "nyc --silent ava",
+    "ts:exec": "npx ts-node --skip-project",
     "check-cli": "run-s test diff-integration-tests check-integration-tests",
     "check-integration-tests": "run-s check-integration-test:*",
     "diff-integration-tests": "mkdir -p diff && rm -rf diff/test && cp -r test diff/test && rm -rf diff/test/test-*/.git && cd diff && git init --quiet && git add -A && git commit --quiet --no-verify --allow-empty -m 'WIP' && echo '\\n\\nCommitted most recent integration test output in the \"diff\" directory. Review the changes with \"cd diff && git diff HEAD\" or your preferred git diff viewer.'",
@@ -52,12 +53,15 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@bitauth/libauth": "^1.17.1"
+    "@bitauth/libauth": "^1.17.1",
+    "chalk": "^4.1.0",
+    "prompts": "^2.4.0"
   },
   "devDependencies": {
     "@ava/typescript": "^1.1.1",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
     "@types/node": "^14.14.16",
+    "@types/prompts": "^2.0.9",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
     "@typescript-eslint/parser": "^4.0.1",
     "ava": "^3.12.1",
