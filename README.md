@@ -1,7 +1,7 @@
 # create-react-native-dapp
 
 <p align="center">
-  <img src="public/cli.png" width="413" height="275" />
+  <img src="public/logo.png" width="200" />
 </p>
 
 [`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) is an `npx` utility to help quickly bootstrap [**React Native ⚛️**](https://reactnative.dev) applications with access to the [**Ethereum**](https://ethereum.org) Blockchain.
