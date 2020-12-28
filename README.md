@@ -13,7 +13,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 - 🚀 Bootstrapped by Expo.
   - Easily take advantage of Expo's high quality, well-supported and well-documented library architecture.
 - 🍫 Served with Ganache.
-  - Your generated app comes with a simple example contract which you can deploy and interact with _directly from your app_.
+  - Your generated app comes with a simple example contract which you can deploy and interact with directly from your app.
 - 🏗️ And it's strictly typed.
   - It comes preconfigured with TypeScript to help write applications that _scale_.
 
