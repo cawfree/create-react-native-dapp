@@ -55,11 +55,13 @@
   "dependencies": {
     "@bitauth/libauth": "^1.17.1",
     "chalk": "^4.1.0",
+    "flat": "^5.0.2",
     "prompts": "^2.4.0"
   },
   "devDependencies": {
     "@ava/typescript": "^1.1.1",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@types/flat": "^5.0.1",
     "@types/node": "^14.14.16",
     "@types/prompts": "^2.0.9",
     "@typescript-eslint/eslint-plugin": "^4.0.1",

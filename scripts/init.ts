@@ -2,8 +2,9 @@ import { execSync } from 'child_process';
 import * as prompts from 'prompts';
 import * as chalk from 'chalk';
 import * as path from 'path';
+import * as fs from 'fs';
 
-const defaultPadding = 3;
+const defaultPadding = 5;
 
 const line = (message: string, padding: number = defaultPadding) =>
   console.log([...Array(padding)].map(() => ' ').join(''), message);
@@ -20,8 +21,6 @@ const line = (message: string, padding: number = defaultPadding) =>
     name: 'name',
     message: 'What is your app named?',
     initial: 'my-react-dapp',
-    // TODO: Should validate
-    //validate: value => value < 18 ? `Nightclub is 18+ only` : true
   });
 
   console.log();
@@ -29,13 +28,27 @@ const line = (message: string, padding: number = defaultPadding) =>
   execSync(`npx create-react-native-app ${name} -t with-typescript`, {
     stdio: 'inherit',
   });
-  // TODO: Set app icon here.
-  line(
-    `${chalk.white`Please support this project by making a donation to`} ${chalk
-      .green.bold`0x312e71162Df834A87a2684d30562b94816b0f072`}.`
-  );
+
+  // TODO: Set app icon here prior to eject.
 
   const dir = path.resolve(name);
 
   execSync(`cd ${dir}; expo eject;`, { stdio: 'inherit' });
+
+  const index = path.resolve(dir, 'index.js');
+
+  const android = path.resolve(dir, 'index.android.js');
+  const ios = path.resolve(dir, 'index.ios.js');
+  const web = path.resolve(dir, 'index.web.js');
+
+  // entry points
+  fs.copyFileSync(index, android);
+  fs.copyFileSync(index, ios);
+  fs.copyFileSync(index, web);
+  fs.unlinkSync(index);
+
+  //line(
+  //  `${chalk.white`Please help support this project by making a donation to `} ${chalk
+  //    .green.bold`cawfree.eth Ξ 0x312e71162Df834A87a2684d30562b94816b0f072`}.`
+  //);
 })();
