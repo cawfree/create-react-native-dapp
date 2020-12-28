@@ -48,6 +48,9 @@
     "reset-hard": "git clean -dfx && git reset --hard && yarn",
     "prepare-release": "run-s reset-hard test cov:check doc:html version doc:publish"
   },
+  "bin": {
+    "create-react-native-dapp": "./build/main/index.js"
+  },
   "engines": {
     "node": ">=10"
   },
