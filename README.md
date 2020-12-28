@@ -21,8 +21,6 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 - 🏗️ And it's strictly typed.
   - It comes preconfigured with TypeScript to help write applications that _scale_.
 
-And this is just the _beginning_.
-
 ## 🚀 Getting Started
 
 You don't have to install anything, just run the following command:
