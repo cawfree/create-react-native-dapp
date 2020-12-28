@@ -1,0 +1,10 @@
+{
+  "name": "create-react-native-dapp",
+  "version": "0.0.1-alpha.0",
+  "description": "Your next Ethereum application starts here. ⚛️  💪 🦄",
+  "main": "dist",
+  "repository": "https://github.com/cawfree/create-react-native-dapp",
+  "author": "Alex Thomas (@cawfree) <hello@cawfree.com>",
+  "license": "MIT",
+  "private": false
+}
