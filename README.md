@@ -1,5 +1,9 @@
 # create-react-native-dapp
 
+![https://img.shields.io/badge/types-typescript-blue](https://img.shields.io/badge/types-typescript-blue)
+![https://img.shields.io/badge/platforms-android%2Cios%2Cweb-brightgreen](https://img.shields.io/badge/platforms-android%2Cios%2Cweb-brightgreen)
+![https://img.shields.io/badge/powered--by-ganache-orange](https://img.shields.io/badge/powered--by-ganache-orange)
+
 <p align="center">
   <img src="public/logo.png" width="100" />
 </p>
