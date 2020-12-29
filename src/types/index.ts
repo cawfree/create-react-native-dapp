@@ -19,6 +19,7 @@ export type createContext = {
   readonly babelConfig: string;
   readonly env: string;
   readonly app: string;
+  readonly contract: string;
   readonly typeRoots: string;
   readonly tsc: string;
   readonly gitignore: string;

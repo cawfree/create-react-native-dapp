@@ -42,6 +42,7 @@ const createBaseContext = (name: string): createContext => {
   const gitignore = path.resolve(dir, '.gitignore');
   const env = path.resolve(dir, '.env');
   const app = path.resolve(dir, 'App.tsx');
+  const contract = path.resolve(dir, 'contracts', 'Hello.sol');
   return Object.freeze({
     dir,
     index: path.resolve(dir, 'index.js'),
@@ -52,6 +53,7 @@ const createBaseContext = (name: string): createContext => {
     pkg,
     tsc,
     typeRoots,
+    contract,
     metroConfig,
     babelConfig,
     env,
@@ -105,15 +107,19 @@ const createScripts = (ctx: createContext) => {
   fs.writeFileSync(
     ctx.postinstall,
     `
+require('dotenv/config');
 const {execSync} = require('child_process');
+
 execSync('npx pod-install', {stdio: 'inherit'});
     `.trim()
   );
   fs.writeFileSync(
     ctx.ganache,
     `
+require('dotenv/config');
 const {execSync} = require('child_process');
-execSync('node node_modules/.bin/ganache-cli', {stdio: 'inherit'});
+
+execSync('node node_modules/.bin/ganache-cli --account_keys_path ./ganache.json', {stdio: 'inherit'});
     `.trim()
   );
 };
@@ -172,6 +178,7 @@ const preparePackage = (ctx: createContext) =>
         'dependencies.react-native-get-random-values': '1.5.0',
         'dependencies.react-native-dotenv': '2.4.3',
         // devDependencies
+        'devDependencies.dotenv': '8.2.0',
         'devDependencies.ganache-cli': '6.12.1',
         // react-native
         'react-native.stream': 'react-native-stream',
@@ -215,13 +222,14 @@ module.exports = function(api) {
     `.trim()
   );
 
-const shouldPrepareEnv = (ctx: createContext) =>
-  fs.writeFileSync(
+const shouldPrepareEnv = async (ctx: createContext) => {
+  return fs.writeFileSync(
     ctx.env,
     `
 GANACHE_URL=http://127.0.0.1:8545
     `.trim()
   );
+};
 
 const shouldInstall = (ctx: createContext) =>
   execSync(`cd ${ctx.dir}; ${ctx.shouldUseYarn ? 'yarn' : 'npm i'}; `.trim(), {
@@ -231,7 +239,24 @@ const shouldInstall = (ctx: createContext) =>
 const shouldInitWeb3Environment = (ctx: createContext) =>
   execSync(`cd ${ctx.dir}; npx truffle init;`, { stdio: 'inherit' });
 
-const shouldPrepareExample = (ctx: createContext) =>
+const shouldPrepareExample = (ctx: createContext) => {
+  fs.writeFileSync(
+    ctx.contract,
+    `
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.4.22 <0.9.0;
+
+contract Hello {
+  string defaultSuffix;
+  constructor() public {
+    defaultSuffix = '!';
+  }
+  function sayHello(string memory name) public view returns(string memory) {
+    return string(abi.encodePacked("Welcome to ", name, defaultSuffix));
+  }
+}
+    `
+  );
   fs.writeFileSync(
     ctx.app,
     `
@@ -240,28 +265,46 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Web3 from 'web3';
 
+import Hello from './build/contracts/Hello.json'
+import {private_keys as privateKeys} from './ganache.json';
+
 const styles = StyleSheet.create({
   center: {alignItems: 'center', justifyContent: 'center'},
 });
 
 export default function App(): JSX.Element {
+  const [message, setMessage] = React.useState<string>('');
+  const web3 = React.useMemo(
+    () => new Web3(new Web3.providers.HttpProvider(GANACHE_URL)),
+    []
+  );
+  const shouldDeployContract = React.useCallback(async (abi, data, from: string) => {
+    const deployment = new web3.eth.Contract(abi).deploy({data});
+    const gas = await deployment.estimateGas();
+    const {
+      options: { address: contractAddress },
+    } = await deployment.send({from, gas});
+    return new web3.eth.Contract(abi, contractAddress);
+  }, [web3]);
   React.useEffect(() => {
     (async () => {
-      const web3 = new Web3(new Web3.providers.HttpProvider(GANACHE_URL));
-      const latestBlock = await web3.eth.getBlock('latest');
-      const wallet = await web3.eth.accounts.create();
-      console.warn({ latestBlock });
-      console.warn({ wallet });
+      const [address, privateKey] = Object.entries(privateKeys)[0];
+      await web3.eth.accounts.privateKeyToAccount(privateKey);
+      const contract = await shouldDeployContract(Hello.abi, Hello.bytecode, address);
+      setMessage(await contract.methods.sayHello("React Native").call());
     })();
-  }, []);
+  }, [shouldDeployContract, setMessage]);
   return (
     <View style={[StyleSheet.absoluteFill, styles.center]}>
-      <Text>Welcome to Web3!</Text>
+      <Text>{message}</Text>
     </View>
   );
 }
     `.trim()
   );
+  // compile example contract
+  execSync(`cd ${ctx.dir}; npx truffle compile;`, { stdio: 'inherit' });
+};
 
 const shouldPrepareGitignore = (ctx: createContext) =>
   fs.writeFileSync(
@@ -271,6 +314,9 @@ ${fs.readFileSync(ctx.gitignore, 'utf-8')}
 
 # environment config
 .env
+
+# ganache
+ganache.json
   `.trim()
   );
 
@@ -300,7 +346,7 @@ export const create = async (params: createParams): Promise<createResult> => {
   shouldPrepareTypeRoots(ctx);
   shouldPrepareTsc(ctx);
   shouldPrepareGitignore(ctx);
-  shouldPrepareEnv(ctx);
+  await shouldPrepareEnv(ctx);
   shouldInitWeb3Environment(ctx);
 
   shouldInstall(ctx);
