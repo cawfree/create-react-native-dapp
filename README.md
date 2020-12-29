@@ -7,7 +7,7 @@
 ![https://img.shields.io/badge/types-typescript-blue](https://img.shields.io/badge/types-typescript-blue)
 ![https://img.shields.io/badge/platforms-android%2Cios%2Cweb-brightgreen](https://img.shields.io/badge/platforms-android%2Cios%2Cweb-brightgreen)
 ![https://img.shields.io/badge/powered--by-ganache-orange](https://img.shields.io/badge/powered--by-ganache-orange)
-![https://img.shields.io/badge/chat-on%20discord-red](https://discord.gg/PeqrwpCDwc)
+[![https://img.shields.io/badge/chat-on%20discord-red](https://img.shields.io/badge/chat-on%20discord-red)](https://discord.gg/PeqrwpCDwc)
 
 https://discord.gg/PeqrwpCDwc
 
