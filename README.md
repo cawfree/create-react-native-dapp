@@ -11,7 +11,7 @@
 
 [`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) is an `npx` utility to help quickly bootstrap [**React Native ⚛️**](https://reactnative.dev) applications with access to the [**Ethereum**](https://ethereum.org) Blockchain.
 
-Our goal is to help create a sustainable open source ecosystem for [`Web3`](https://github.com/ethereum/web3.js/) in React Native by providing a dependable common runtime which we can buidl(sic) upon and extend **together**.
+Our goal is to help create a sustainable open source ecosystem for [`Web3`](https://github.com/ethereum/web3.js/) in React Native by providing a dependable common runtime which we can _buidl_ upon and extend **together**.
 
 ### 🔥 Features
 
