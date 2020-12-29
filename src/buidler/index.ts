@@ -355,6 +355,8 @@ export const create = async (params: createParams): Promise<createResult> => {
   return Object.freeze({
     ...ctx,
     status: CreationStatus.SUCCESS,
-    message: 'Successfully initialized dapp.',
+    message: `cd ${name}; ${
+      ctx.shouldUseYarn ? 'yarn' : 'npm run-script'
+    } ganache& yarn web;`,
   });
 };

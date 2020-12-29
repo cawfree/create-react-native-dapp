@@ -1,2 +1,2 @@
-export * from './builder';
+export * from './buidler';
 export * from './types';
