@@ -38,7 +38,7 @@ This will walk you through the creation of your Ethereum-enabled application, wh
 [`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) also exports a simple interface for the programmatic allocation of new projects.
 
 ```ts
-import {create} from 'create-react-native-dapp';
+import { create } from 'create-react-native-dapp';
 
 (async () => {
   const name = 'my-react-dapp';
