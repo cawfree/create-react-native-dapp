@@ -23,7 +23,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 - 🏗️ **And it's strictly typed.**
   - It comes pre-configured with TypeScript to help write applications that _scale_.
 
-## 🚀 Getting Started
+## To get started,
 
 You don't have to install anything, just run the following command:
 
@@ -32,6 +32,19 @@ npx create-react-native-dapp
 ```
 
 This will walk you through the creation of your Ethereum-enabled application, which works on [**Android**](https://reactnative.dev), [**iOS**](https://reactnative.dev) and the [**Web**](https://github.com/necolas/react-native-web). The resulting project has been `eject`ed from [**Expo**](https://expo.io) and merged with [**Truffle Suite**](https://www.trufflesuite.com/).
+
+## To programmatically invoke,
+
+[`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) also exports a simple interface for the programmatic allocation of new projects.
+
+```ts
+import {create} from 'create-react-native-dapp';
+
+(async () => {
+  const name = 'my-react-dapp';
+  await create({ name });
+})();
+```
 
 ## ✌️ License
 
