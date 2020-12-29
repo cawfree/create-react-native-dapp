@@ -42,7 +42,7 @@ import {create} from 'create-react-native-dapp';
 
 (async () => {
   const name = 'my-react-dapp';
-  await create({ name });
+  const { dir } = await create({ name });
 })();
 ```
 
