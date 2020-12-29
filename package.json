@@ -1,6 +1,6 @@
 {
   "name": "create-react-native-dapp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": false,
   "description": "Your next Ethereum application starts here. ⚛️  💪 🦄",
   "main": "build/main/index.js",
