@@ -7,6 +7,9 @@
 ![https://img.shields.io/badge/types-typescript-blue](https://img.shields.io/badge/types-typescript-blue)
 ![https://img.shields.io/badge/platforms-android%2Cios%2Cweb-brightgreen](https://img.shields.io/badge/platforms-android%2Cios%2Cweb-brightgreen)
 ![https://img.shields.io/badge/powered--by-ganache-orange](https://img.shields.io/badge/powered--by-ganache-orange)
+![https://img.shields.io/badge/chat-on%20discord-red](https://discord.gg/PeqrwpCDwc)
+
+https://discord.gg/PeqrwpCDwc
 
 [`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) is an `npx` utility to help quickly bootstrap [**React Native ⚛️**](https://reactnative.dev) applications with access to the [**Ethereum**](https://ethereum.org) Blockchain.
 

@@ -11,6 +11,9 @@ import {
   CreationStatus,
 } from '../types';
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+const prettyStringify = (obj: object): string => JSON.stringify(obj, null, 2);
+
 const createBaseProject = (name: string) =>
   execSync(`npx create-react-native-app ${name} -t with-typescript`, {
     stdio: 'inherit',
@@ -31,8 +34,13 @@ const createBaseContext = (name: string): createContext => {
   const postinstall = path.resolve(scripts, 'postinstall.js');
   const ganache = path.resolve(scripts, 'ganache.js');
   const pkg = path.resolve(dir, 'package.json');
+  const typeRoots = path.resolve(dir, 'index.d.ts');
+  const tsc = path.resolve(dir, 'tsconfig.json');
   const shouldUseYarn = fs.existsSync(path.resolve(dir, 'yarn.lock'));
   const metroConfig = path.resolve(dir, 'metro.config.js');
+  const babelConfig = path.resolve(dir, 'babel.config.js');
+  const gitignore = path.resolve(dir, '.gitignore');
+  const env = path.resolve(dir, '.env');
   const app = path.resolve(dir, 'App.tsx');
   return Object.freeze({
     dir,
@@ -40,8 +48,13 @@ const createBaseContext = (name: string): createContext => {
     scripts,
     postinstall,
     ganache,
+    gitignore,
     pkg,
+    tsc,
+    typeRoots,
     metroConfig,
+    babelConfig,
+    env,
     app,
     shouldUseYarn,
   });
@@ -105,10 +118,43 @@ execSync('node node_modules/.bin/ganache-cli', {stdio: 'inherit'});
   );
 };
 
+const shouldPrepareTypeRoots = (ctx: createContext) =>
+  fs.writeFileSync(
+    ctx.typeRoots,
+    `
+declare module '@env' {
+  export const GANACHE_URL: string;
+}
+  `.trim()
+  );
+
+const shouldPrepareTsc = (ctx: createContext) =>
+  fs.writeFileSync(
+    ctx.tsc,
+    prettyStringify({
+      compilerOptions: {
+        allowSyntheticDefaultImports: true,
+        jsx: 'react-native',
+        lib: ['dom', 'esnext'],
+        moduleResolution: 'node',
+        noEmit: true,
+        skipLibCheck: true,
+        resolveJsonModule: true,
+        typeRoots: ['index.d.ts'],
+      },
+      exclude: [
+        'node_modules',
+        'babel.config.js',
+        'metro.config.js',
+        'jest.config.js',
+      ],
+    })
+  );
+
 const preparePackage = (ctx: createContext) =>
   fs.writeFileSync(
     ctx.pkg,
-    JSON.stringify(
+    prettyStringify(
       unflatten({
         // eslint-disable-next-line @typescript-eslint/ban-types
         ...(flatten(JSON.parse(fs.readFileSync(ctx.pkg, 'utf-8'))) as object),
@@ -124,6 +170,7 @@ const preparePackage = (ctx: createContext) =>
         'dependencies.react-native-stream': '0.1.9',
         'dependencies.react-native-crypto': '2.2.0',
         'dependencies.react-native-get-random-values': '1.5.0',
+        'dependencies.react-native-dotenv': '2.4.3',
         // devDependencies
         'devDependencies.ganache-cli': '6.12.1',
         // react-native
@@ -131,9 +178,7 @@ const preparePackage = (ctx: createContext) =>
         'react-native.crypto': 'react-native-crypto',
         'react-native.path': 'path-browserify',
         'react-native.process': 'node-libs-browser/mock/process',
-      }),
-      null,
-      2
+      })
     )
   );
 
@@ -154,6 +199,30 @@ module.exports = {
     `.trim()
   );
 
+const shouldPrepareBabel = (ctx: createContext) =>
+  fs.writeFileSync(
+    ctx.babelConfig,
+    `
+module.exports = function(api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      ['module:react-native-dotenv'],
+    ],
+  };
+};
+    `.trim()
+  );
+
+const shouldPrepareEnv = (ctx: createContext) =>
+  fs.writeFileSync(
+    ctx.env,
+    `
+GANACHE_URL=http://127.0.0.1:8545
+    `.trim()
+  );
+
 const shouldInstall = (ctx: createContext) =>
   execSync(`cd ${ctx.dir}; ${ctx.shouldUseYarn ? 'yarn' : 'npm i'}; `.trim(), {
     stdio: 'inherit',
@@ -166,8 +235,9 @@ const shouldPrepareExample = (ctx: createContext) =>
   fs.writeFileSync(
     ctx.app,
     `
+import {GANACHE_URL} from '@env';
 import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Web3 from 'web3';
 
 const styles = StyleSheet.create({
@@ -177,8 +247,7 @@ const styles = StyleSheet.create({
 export default function App(): JSX.Element {
   React.useEffect(() => {
     (async () => {
-      const ganache = 'http://127.0.0.1:8545';
-      const web3 = new Web3(new Web3.providers.HttpProvider(ganache));
+      const web3 = new Web3(new Web3.providers.HttpProvider(GANACHE_URL));
       const latestBlock = await web3.eth.getBlock('latest');
       const wallet = await web3.eth.accounts.create();
       console.warn({ latestBlock });
@@ -192,6 +261,17 @@ export default function App(): JSX.Element {
   );
 }
     `.trim()
+  );
+
+const shouldPrepareGitignore = (ctx: createContext) =>
+  fs.writeFileSync(
+    ctx.gitignore,
+    `
+${fs.readFileSync(ctx.gitignore, 'utf-8')}
+
+# environment config
+.env
+  `.trim()
   );
 
 export const create = async (params: createParams): Promise<createResult> => {
@@ -216,6 +296,11 @@ export const create = async (params: createParams): Promise<createResult> => {
   createTests();
   preparePackage(ctx);
   shouldPrepareMetro(ctx);
+  shouldPrepareBabel(ctx);
+  shouldPrepareTypeRoots(ctx);
+  shouldPrepareTsc(ctx);
+  shouldPrepareGitignore(ctx);
+  shouldPrepareEnv(ctx);
   shouldInitWeb3Environment(ctx);
 
   shouldInstall(ctx);
