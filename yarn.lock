@@ -183,11 +183,6 @@
     lodash "^4.17.19"
     to-fast-properties "^2.0.0"
 
-"@bitauth/libauth@^1.17.1":
-  version "1.17.3"
-  resolved "https://registry.yarnpkg.com/@bitauth/libauth/-/libauth-1.17.3.tgz#4a29ff6a8b157d10050f0ba3c0f5a062805536d6"
-  integrity sha512-F8RewY6td3fyIQaUTMO1lV/aWLotB3HZ0UWKRCC+4pJbNCKlh8WLNNkiIPAFn6Mf3sPgYgrUnS3YlLRqMhzv7g==
-
 "@commitlint/execute-rule@^11.0.0":
   version "11.0.0"
   resolved "https://registry.yarnpkg.com/@commitlint/execute-rule/-/execute-rule-11.0.0.tgz#3ed60ab7a33019e58d90e2d891b75d7df77b4b4d"
