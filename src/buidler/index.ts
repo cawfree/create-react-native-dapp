@@ -87,7 +87,7 @@ if (Platform.OS !== 'web') {
   );
 }
 
-if (typeof Buffer === undefined) {
+if (typeof Buffer === 'undefined') {
   global.Buffer = require('buffer').Buffer;
 }
 
