@@ -46,16 +46,18 @@ yarn ios # android,web
 [`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) also exports a simple interface for the programmatic allocation of new projects.
 
 ```ts
-import { create } from 'create-react-native-dapp';
+import { create, BlockchainTools } from 'create-react-native-dapp';
 
 (async () => {
   const name = 'my-react-dapp';
   const bundleIdentifier = 'io.github.cawfree.dapp';
   const packageName = 'io.github.cawfree.dapp';
+  const blockchainTools = BlockchainTools.NONE;
   const { dir } = await create({
     name,
     bundleIdentifer,
     packageName,
+    blockchainTools,
   });
 })();
 ```

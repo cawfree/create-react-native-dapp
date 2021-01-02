@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import prompts from 'prompts';
 
 import { create } from '../buidler';
-import { CreationStatus } from '../types';
+import { CreationStatus, BlockchainTools } from '../types';
 
 const defaultPadding = 5;
 
@@ -50,7 +50,12 @@ function validatePackage(value: string): boolean {
 
   console.log();
 
-  const { name, bundleIdentifier, packageName } = await prompts([
+  const {
+    name,
+    bundleIdentifier,
+    packageName,
+    blockchainTools,
+  } = await prompts([
     {
       type: 'text',
       name: 'name',
@@ -70,6 +75,22 @@ function validatePackage(value: string): boolean {
         }
         return true;
       },
+    },
+    {
+      type: 'select',
+      name: 'blockchainTools',
+      message: 'Which blockchain tools would you like to use?',
+      choices: [
+        {
+          title: '🍫 Truffle Suite',
+          value: BlockchainTools.TRUFFLE,
+        },
+        {
+          title: '💨 None',
+          value: BlockchainTools.NONE,
+        },
+      ],
+      initial: 0,
     },
     {
       type: 'text',
@@ -95,38 +116,17 @@ function validatePackage(value: string): boolean {
     },
   ]);
 
-  const {
-    message,
-    status,
-    options: { yarn },
-  } = await create({ name, bundleIdentifier, packageName });
+  const { status, message } = await create({
+    name,
+    bundleIdentifier,
+    packageName,
+    blockchainTools,
+  });
 
   if (status === CreationStatus.FAILURE) {
     // eslint-disable-next-line functional/no-throw-statement
     throw new Error(message);
   }
-
-  const cmd = (str: string) =>
-    chalk.white.bold`${yarn ? 'yarn' : 'npm run-script'} ${str}`;
-
-  console.log();
-  console.log(
-    chalk.green`✔`,
-    'Successfully integrated Web3 into React Native!'
-  );
-  console.log();
-  console.log(
-    'Before starting, you must initialize the simulated blockchain by executing:'
-  );
-  console.log('-', cmd('ganache'));
-  console.log();
-  console.log(
-    'To compile and run your project in development, execute one of the following commands:'
-  );
-  console.log('-', cmd('ios'));
-  console.log('-', cmd('android'));
-  console.log('-', cmd('web'));
-  console.log('To recompile your contracts, use:');
-  console.log('-', chalk.white.bold`npx truffle compile`);
+  console.log(message);
   console.log();
 })();

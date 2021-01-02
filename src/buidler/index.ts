@@ -1,16 +1,22 @@
 import { execSync } from 'child_process';
+
+import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { flatten, unflatten } from 'flat';
 
 import {
+  BlockchainTools,
   createContext,
   createContextOptions,
   createContextPaths,
   createParams,
   createResult,
   CreationStatus,
+  EnvVariable,
+  EnvVariables,
+  TruffleOptions,
 } from '../types';
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -61,12 +67,30 @@ const setAppIcon = () => null;
 // TODO: Add jest and show a working demonstration of solc.
 const createTests = () => null;
 
+const createFileThunk = (root: string) => (f: readonly string[]): string => {
+  return path.resolve(root, ...f);
+};
+
+const maybeTruffleOptions = (
+  params: createParams,
+  projectFile: (f: readonly string[]) => string,
+  scriptFile: (f: readonly string[]) => string
+): TruffleOptions | null => {
+  if (params.blockchainTools === BlockchainTools.TRUFFLE) {
+    return {
+      contract: projectFile(['contracts', 'Hello.sol']),
+      ganache: scriptFile(['ganache.js']),
+    } as TruffleOptions;
+  }
+  return null;
+};
+
 const createBaseContext = (params: createParams): createContext => {
   const { name } = params;
   const projectDir = path.resolve(name);
   const scriptsDir = path.resolve(projectDir, 'scripts');
-  const projectFile = (f: readonly string[]) => path.resolve(projectDir, ...f);
-  const scriptFile = (f: readonly string[]) => path.resolve(scriptsDir, ...f);
+  const projectFile = createFileThunk(projectDir);
+  const scriptFile = createFileThunk(scriptsDir);
   const paths = {
     // project
     projectDir,
@@ -77,18 +101,17 @@ const createBaseContext = (params: createParams): createContext => {
     env: projectFile(['.env']),
     app: projectFile(['App.tsx']),
     appJson: projectFile(['app.json']),
-    contract: projectFile(['contracts', 'Hello.sol']),
     typeRoots: projectFile(['index.d.ts']),
     tsc: projectFile(['tsconfig.json']),
     gitignore: projectFile(['.gitignore']),
     // scripts
     scriptsDir,
-    ganache: scriptFile(['ganache.js']),
     postinstall: scriptFile(['postinstall.js']),
   };
   const options = {
     ...params,
     yarn: fs.existsSync(projectFile(['yarn.lock'])),
+    truffle: maybeTruffleOptions(params, projectFile, scriptFile),
   };
 
   const shouldCreateContext = (
@@ -149,6 +172,25 @@ registerRootComponent(App);
     `.trim()
   );
 
+const maybeCreateTruffleScripts = (ctx: createContext) => {
+  if (ctx.options.truffle) {
+    const {
+      options: {
+        truffle: { ganache },
+      },
+    } = ctx;
+    fs.writeFileSync(
+      ganache,
+      `
+require('dotenv/config');
+const {execSync} = require('child_process');
+
+execSync('node node_modules/.bin/ganache-cli --account_keys_path ./ganache.json', {stdio: 'inherit'});
+      `.trim()
+    );
+  }
+};
+
 const createScripts = (ctx: createContext) => {
   fs.mkdirSync(ctx.paths.scriptsDir);
   fs.writeFileSync(
@@ -160,26 +202,40 @@ const {execSync} = require('child_process');
 execSync('npx pod-install', {stdio: 'inherit'});
     `.trim()
   );
-  fs.writeFileSync(
-    ctx.paths.ganache,
-    `
-require('dotenv/config');
-const {execSync} = require('child_process');
-
-execSync('node node_modules/.bin/ganache-cli --account_keys_path ./ganache.json', {stdio: 'inherit'});
-    `.trim()
-  );
+  maybeCreateTruffleScripts(ctx);
 };
 
-const shouldPrepareTypeRoots = (ctx: createContext) =>
-  fs.writeFileSync(
+const maybeGetTruffleVariables = (ctx: createContext): EnvVariables => {
+  if (ctx.options.truffle) {
+    return [['GANACHE_URL', 'string', 'http://127.0.0.1:8545']];
+  }
+  return [];
+};
+
+const maybeGetDefaultVariables = (ctx: createContext): EnvVariables => {
+  if (ctx.options.blockchainTools === BlockchainTools.NONE) {
+    return [['INFURA_API_KEY', 'string', '']];
+  }
+  return [];
+};
+
+const getAllEnvVariables = (ctx: createContext): EnvVariables => {
+  return [...maybeGetTruffleVariables(ctx), ...maybeGetDefaultVariables(ctx)];
+};
+
+const shouldPrepareTypeRoots = (ctx: createContext) => {
+  const stringsToRender = getAllEnvVariables(ctx).map(
+    ([name, type]: EnvVariable) => `   export const ${name}: ${type};`
+  );
+  return fs.writeFileSync(
     ctx.paths.typeRoots,
     `
 declare module '@env' {
-  export const GANACHE_URL: string;
+${stringsToRender.join('\n')}
 }
-  `.trim()
+    `.trim()
   );
+};
 
 const shouldPrepareTsc = (ctx: createContext) =>
   fs.writeFileSync(
@@ -204,11 +260,29 @@ const shouldPrepareTsc = (ctx: createContext) =>
     })
   );
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+const maybeGetTruffleFlattenedScripts = (ctx: createContext): object => {
+  if (ctx.options.truffle) {
+    return { 'scripts.ganache': 'node scripts/ganache' };
+  }
+  return {};
+};
+
+const maybeGetTruffleFlattenedDevDependencies = (
+  ctx: createContext
+  // eslint-disable-next-line @typescript-eslint/ban-types
+): object => {
+  if (ctx.options.truffle) {
+    return { 'devDependencies.ganache-cli': '6.12.1' };
+  }
+  return {};
+};
+
 const preparePackage = (ctx: createContext) =>
   injectFlattenedJsonToFile(ctx.paths.pkg, {
     // scripts
     'scripts.postinstall': 'node scripts/postinstall',
-    'scripts.ganache': 'node scripts/ganache',
+    ...maybeGetTruffleFlattenedScripts(ctx),
     // dependencies
     'dependencies.base-64': '1.0.0',
     'dependencies.buffer': '6.0.3',
@@ -221,7 +295,7 @@ const preparePackage = (ctx: createContext) =>
     'dependencies.react-native-dotenv': '2.4.3',
     // devDependencies
     'devDependencies.dotenv': '8.2.0',
-    'devDependencies.ganache-cli': '6.12.1',
+    ...maybeGetTruffleFlattenedDevDependencies(ctx),
     // react-native
     'react-native.stream': 'react-native-stream',
     'react-native.crypto': 'react-native-crypto',
@@ -262,13 +336,12 @@ module.exports = function(api) {
     `.trim()
   );
 
-const shouldPrepareEnv = async (ctx: createContext) => {
-  return fs.writeFileSync(
-    ctx.paths.env,
-    `
-GANACHE_URL=http://127.0.0.1:8545
-    `.trim()
+const shouldWriteEnv = (ctx: createContext) => {
+  const lines = getAllEnvVariables(ctx).map(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ([name, _type, value]) => `${name}=${value}`
   );
+  return fs.writeFileSync(ctx.paths.env, `${lines.join('\n')}\n`);
 };
 
 const shouldInstall = (ctx: createContext) =>
@@ -281,14 +354,19 @@ const shouldInstall = (ctx: createContext) =>
     }
   );
 
-const shouldInitWeb3Environment = (ctx: createContext) =>
-  execSync(`cd ${ctx.paths.projectDir}; npx truffle init;`, {
+const shouldPrepareTruffleExample = (ctx: createContext) => {
+  const {
+    paths: { projectDir, app },
+    options,
+  } = ctx;
+  const { truffle } = options;
+
+  execSync(`cd ${projectDir}; npx truffle init;`, {
     stdio: 'inherit',
   });
 
-const shouldPrepareExample = (ctx: createContext) => {
   fs.writeFileSync(
-    ctx.paths.contract,
+    (truffle as TruffleOptions).contract,
     `
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
@@ -305,7 +383,7 @@ contract Hello {
     `
   );
   fs.writeFileSync(
-    ctx.paths.app,
+    app,
     `
 import {GANACHE_URL} from '@env';
 import React from 'react';
@@ -349,25 +427,141 @@ export default function App(): JSX.Element {
 }
     `.trim()
   );
-  // compile example contract
-  execSync(`cd ${ctx.paths.projectDir}; npx truffle compile;`, {
+
+  execSync(`cd ${projectDir}; npx truffle compile;`, {
     stdio: 'inherit',
   });
 };
 
-const shouldPrepareGitignore = (ctx: createContext) =>
+const shouldPrepareDefaultExample = (ctx: createContext) => {
+  fs.writeFileSync(
+    ctx.paths.app,
+    `
+import {INFURA_API_KEY} from '@env';
+import React from 'react';
+import { Text, View, StyleSheet } from 'react-native';
+import Web3 from 'web3';
+
+const styles = StyleSheet.create({
+  center: { alignItems: 'center', justifyContent: 'center' },
+});
+
+export default function App(): JSX.Element {
+  const web3 = React.useMemo(
+    () =>
+      new Web3(
+        new Web3.providers.HttpProvider(
+          \`https://ropsten.infura.io/v3/\${INFURA_API_KEY}\`
+        )
+      ),
+    []
+  );
+  const [latestBlock, setLatestBlock] = React.useState<any>();
+  React.useEffect(() => {
+    (async () => {
+      setLatestBlock(await web3.eth.getBlock('latest'));
+    })();
+  }, [setLatestBlock, web3]);
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.center]}>
+      <Text>Welcome to React Native!</Text>
+      {!!latestBlock && (
+        <Text>{\`The latest block's mining difficulty is: \${latestBlock.difficulty}.\`}</Text>
+      )}
+    </View>
+  );
+}
+    `.trim()
+  );
+};
+
+const shouldPrepareExample = (ctx: createContext) => {
+  if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
+    return shouldPrepareTruffleExample(ctx);
+  }
+  return shouldPrepareDefaultExample(ctx);
+};
+
+const maybeReturnGanacheGitIgnore = (ctx: createContext): string | null => {
+  if (ctx.options.blockchainTools) {
+    return `
+# ganache
+ganache.json
+    `.trim();
+  }
+  return null;
+};
+
+const shouldPrepareGitignore = (ctx: createContext) => {
+  const lines = [maybeReturnGanacheGitIgnore(ctx)].filter(
+    (e) => !!e
+  ) as readonly string[];
   fs.writeFileSync(
     ctx.paths.gitignore,
     `
 ${fs.readFileSync(ctx.paths.gitignore, 'utf-8')}
-
-# environment config
+# Environment
 .env
 
-# ganache
-ganache.json
+${lines.join('\n\n')}
+
   `.trim()
   );
+};
+
+const getScriptCommandString = (ctx: createContext, str: string) =>
+  chalk.white.bold`${ctx.options.yarn ? 'yarn' : 'npm run-script'} ${str}`;
+
+export const getSuccessMessagePrefix = (ctx: createContext): string | null => {
+  if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
+    return `
+Before starting, you must initialize the simulated blockchain by executing:
+- ${getScriptCommandString(ctx, 'ganache')}
+`.trim();
+  }
+  return null;
+};
+
+export const getSuccessMessageSuffix = (ctx: createContext): string | null => {
+  if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
+    return `
+To recompile your contracts you can execute:
+${chalk.white.bold`npx truffle compile`}
+`.trim();
+  }
+  return `
+By the way, we've added a tiny stub that connects to Infura for you.
+You'll need to fill in an INFURA_API_KEY in your ${chalk.white
+    .bold`.env`} for this to work.
+  `.trim();
+  return ``;
+};
+
+export const getSuccessMessage = (ctx: createContext): string => {
+  const pfx = getSuccessMessagePrefix(ctx);
+  const sfx = getSuccessMessageSuffix(ctx);
+  return `
+${chalk.green`✔`} Successfully integrated Web3 into React Native!
+${
+  pfx
+    ? ` 
+${pfx}`
+    : ''
+}
+
+To compile and run your project in development, execute one of the following commands:
+- ${getScriptCommandString(ctx, `ios`)}
+- ${getScriptCommandString(ctx, `android`)}
+- ${getScriptCommandString(ctx, `web`)}
+${
+  sfx
+    ? `
+${sfx}`
+    : ''
+}
+
+  `.trim();
+};
 
 export const create = async (params: createParams): Promise<createResult> => {
   createBaseProject(params);
@@ -393,21 +587,14 @@ export const create = async (params: createParams): Promise<createResult> => {
   shouldPrepareTypeRoots(ctx);
   shouldPrepareTsc(ctx);
   shouldPrepareGitignore(ctx);
-  await shouldPrepareEnv(ctx);
-  shouldInitWeb3Environment(ctx);
+  shouldWriteEnv(ctx);
 
   shouldInstall(ctx);
   shouldPrepareExample(ctx);
 
-  const {
-    options: { name, yarn },
-  } = ctx;
-
   return Object.freeze({
     ...ctx,
     status: CreationStatus.SUCCESS,
-    message: `cd ${name}; ${
-      yarn ? 'yarn' : 'npm run-script'
-    } ganache& yarn web;`,
+    message: getSuccessMessage(ctx),
   });
 };
