@@ -53,11 +53,8 @@ MMMMMMMMMMMMMMMMMMMMMMMWXXNMMMMMMMMMMMMMMMMMMMMMMM
           return `Expected string, encountered ${typeof value}.`;
         } else if (!value.length) {
           return 'Name cannot be empty.';
-        } else if (
-          !value.match(/^[a-z0-9-]+$/i) ||
-          value.toLowerCase() !== value
-        ) {
-          return 'Name must be lowercase alphanumeric and contain no special characters other than a hyphen.';
+        } else if (!value.match(/^[a-z0-9-]+$/i)) {
+          return 'Name must be alphanumeric and contain no special characters other than a hyphen.';
         } else if (/^\d/.test(value)) {
           return 'Name cannot begin with a number.';
         } else if (/^-/.test(value)) {
