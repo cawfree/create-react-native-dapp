@@ -33,6 +33,13 @@ npx create-react-native-dapp
 
 This will walk you through the creation of your Ethereum-enabled application, which works on [**Android**](https://reactnative.dev), [**iOS**](https://reactnative.dev) and the [**Web**](https://github.com/necolas/react-native-web). The resulting project has been `eject`ed from [**Expo**](https://expo.io) and merged with [**Truffle Suite**](https://www.trufflesuite.com/).
 
+Next, start the blockchain and run the app:
+
+```
+cd my-react-dapp
+yarn ganache
+```
+
 ## To programmatically invoke,
 
 [`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) also exports a simple interface for the programmatic allocation of new projects.
