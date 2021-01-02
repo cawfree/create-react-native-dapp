@@ -1,6 +1,7 @@
 export enum BlockchainTools {
   NONE,
   TRUFFLE,
+  HARDHAT,
 }
 
 export enum CreationStatus {
@@ -38,9 +39,21 @@ export type TruffleOptions = {
   readonly ganache: string;
 };
 
+export type HardhatAccount = {
+  readonly privateKey: string;
+  readonly balance: string;
+};
+
+export type HardhatOptions = {
+  readonly hardhat: string;
+  readonly hardhatConfig: string;
+  readonly hardhatAccounts: readonly HardhatAccount[];
+};
+
 export type createContextOptions = createParams & {
   readonly yarn: boolean;
   readonly truffle: TruffleOptions | null;
+  readonly hardhat: HardhatOptions | null;
 };
 
 export type createContext = {

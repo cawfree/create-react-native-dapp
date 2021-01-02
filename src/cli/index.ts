@@ -82,6 +82,10 @@ function validatePackage(value: string): boolean {
       message: 'Which blockchain tools would you like to use?',
       choices: [
         {
+          title: '👷 Hardhat',
+          value: BlockchainTools.HARDHAT,
+        },
+        {
           title: '🍫 Truffle Suite',
           value: BlockchainTools.TRUFFLE,
         },

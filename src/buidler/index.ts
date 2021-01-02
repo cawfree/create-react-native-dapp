@@ -1,9 +1,9 @@
 import { execSync } from 'child_process';
-
-import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import chalk from 'chalk';
+import { ethers } from 'ethers';
 import { flatten, unflatten } from 'flat';
 
 import {
@@ -16,6 +16,7 @@ import {
   CreationStatus,
   EnvVariable,
   EnvVariables,
+  HardhatOptions,
   TruffleOptions,
 } from '../types';
 
@@ -85,7 +86,30 @@ const maybeTruffleOptions = (
   return null;
 };
 
-const createBaseContext = (params: createParams): createContext => {
+const maybeHardhatOptions = async (
+  params: createParams,
+  projectFile: (f: readonly string[]) => string,
+  scriptFile: (f: readonly string[]) => string
+): Promise<HardhatOptions | null> => {
+  if (params.blockchainTools === BlockchainTools.HARDHAT) {
+    const hardhatAccounts = await Promise.all(
+      [...Array(10)].map(async () => {
+        const { privateKey } = await ethers.Wallet.createRandom();
+        return { privateKey, balance: '1000000000000000000000' }; // 1000 ETH
+      })
+    );
+    return {
+      hardhat: scriptFile(['hardhat.js']),
+      hardhatConfig: projectFile(['hardhat.config.js']),
+      hardhatAccounts,
+    } as HardhatOptions;
+  }
+  return null;
+};
+
+const createBaseContext = async (
+  params: createParams
+): Promise<createContext> => {
   const { name } = params;
   const projectDir = path.resolve(name);
   const scriptsDir = path.resolve(projectDir, 'scripts');
@@ -112,6 +136,7 @@ const createBaseContext = (params: createParams): createContext => {
     ...params,
     yarn: fs.existsSync(projectFile(['yarn.lock'])),
     truffle: maybeTruffleOptions(params, projectFile, scriptFile),
+    hardhat: await maybeHardhatOptions(params, projectFile, scriptFile),
   };
 
   const shouldCreateContext = (
@@ -191,6 +216,26 @@ execSync('node node_modules/.bin/ganache-cli --account_keys_path ./ganache.json'
   }
 };
 
+const maybeCreateHardhatScripts = (ctx: createContext) => {
+  if (ctx.options.hardhat) {
+    const {
+      options: {
+        hardhat: { hardhat },
+      },
+    } = ctx;
+
+    fs.writeFileSync(
+      hardhat,
+      `
+require('dotenv/config');
+const {execSync} = require('child_process');
+
+execSync('npx hardhat node', {stdio: 'inherit'});
+      `.trim()
+    );
+  }
+};
+
 const createScripts = (ctx: createContext) => {
   fs.mkdirSync(ctx.paths.scriptsDir);
   fs.writeFileSync(
@@ -203,11 +248,26 @@ execSync('npx pod-install', {stdio: 'inherit'});
     `.trim()
   );
   maybeCreateTruffleScripts(ctx);
+  maybeCreateHardhatScripts(ctx);
 };
 
 const maybeGetTruffleVariables = (ctx: createContext): EnvVariables => {
   if (ctx.options.truffle) {
     return [['GANACHE_URL', 'string', 'http://127.0.0.1:8545']];
+  }
+  return [];
+};
+
+const maybeGetHardhatVariables = (ctx: createContext): EnvVariables => {
+  if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
+    const {
+      options: { hardhat: maybeHardhatOptions },
+    } = ctx;
+    const { hardhatAccounts } = maybeHardhatOptions as HardhatOptions;
+    return [
+      ['HARDHAT_URL', 'string', 'http://localhost:8545'],
+      ['HARDHAT_PRIVATE_KEY', 'string', hardhatAccounts[0].privateKey],
+    ];
   }
   return [];
 };
@@ -220,7 +280,11 @@ const maybeGetDefaultVariables = (ctx: createContext): EnvVariables => {
 };
 
 const getAllEnvVariables = (ctx: createContext): EnvVariables => {
-  return [...maybeGetTruffleVariables(ctx), ...maybeGetDefaultVariables(ctx)];
+  return [
+    ...maybeGetTruffleVariables(ctx),
+    ...maybeGetHardhatVariables(ctx),
+    ...maybeGetDefaultVariables(ctx),
+  ];
 };
 
 const shouldPrepareTypeRoots = (ctx: createContext) => {
@@ -268,6 +332,14 @@ const maybeGetTruffleFlattenedScripts = (ctx: createContext): object => {
   return {};
 };
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+const maybeGetHardhatFlattenedScripts = (ctx: createContext): object => {
+  if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
+    return { 'scripts.hardhat': 'node scripts/hardhat' };
+  }
+  return {};
+};
+
 const maybeGetTruffleFlattenedDevDependencies = (
   ctx: createContext
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -278,11 +350,22 @@ const maybeGetTruffleFlattenedDevDependencies = (
   return {};
 };
 
+const maybeGetHardhatFlattenedDevDependencies = (
+  ctx: createContext
+  // eslint-disable-next-line @typescript-eslint/ban-types
+): object => {
+  if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
+    return { 'devDependencies.hardhat': '2.0.6' };
+  }
+  return {};
+};
+
 const preparePackage = (ctx: createContext) =>
   injectFlattenedJsonToFile(ctx.paths.pkg, {
     // scripts
     'scripts.postinstall': 'node scripts/postinstall',
     ...maybeGetTruffleFlattenedScripts(ctx),
+    ...maybeGetHardhatFlattenedScripts(ctx),
     // dependencies
     'dependencies.base-64': '1.0.0',
     'dependencies.buffer': '6.0.3',
@@ -296,6 +379,7 @@ const preparePackage = (ctx: createContext) =>
     // devDependencies
     'devDependencies.dotenv': '8.2.0',
     ...maybeGetTruffleFlattenedDevDependencies(ctx),
+    ...maybeGetHardhatFlattenedDevDependencies(ctx),
     // react-native
     'react-native.stream': 'react-native-stream',
     'react-native.crypto': 'react-native-crypto',
@@ -354,20 +438,8 @@ const shouldInstall = (ctx: createContext) =>
     }
   );
 
-const shouldPrepareTruffleExample = (ctx: createContext) => {
-  const {
-    paths: { projectDir, app },
-    options,
-  } = ctx;
-  const { truffle } = options;
-
-  execSync(`cd ${projectDir}; npx truffle init;`, {
-    stdio: 'inherit',
-  });
-
-  fs.writeFileSync(
-    (truffle as TruffleOptions).contract,
-    `
+const getExampleContract = () =>
+  `
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
 
@@ -380,8 +452,20 @@ contract Hello {
     return string(abi.encodePacked("Welcome to ", name, defaultSuffix));
   }
 }
-    `
-  );
+`.trim();
+
+const shouldPrepareTruffleExample = (ctx: createContext) => {
+  const {
+    paths: { projectDir, app },
+    options,
+  } = ctx;
+  const { truffle } = options;
+
+  execSync(`cd ${projectDir}; npx truffle init;`, {
+    stdio: 'inherit',
+  });
+
+  fs.writeFileSync((truffle as TruffleOptions).contract, getExampleContract());
   fs.writeFileSync(
     app,
     `
@@ -451,6 +535,7 @@ export default function App(): JSX.Element {
     () =>
       new Web3(
         new Web3.providers.HttpProvider(
+          '',
           \`https://ropsten.infura.io/v3/\${INFURA_API_KEY}\`
         )
       ),
@@ -475,15 +560,108 @@ export default function App(): JSX.Element {
   );
 };
 
+const shouldPrepareHardhatExample = (ctx: createContext) => {
+  const {
+    paths: { projectDir, app },
+    options: { hardhat: maybeHardhatOptions },
+  } = ctx;
+  const {
+    hardhatConfig,
+    hardhatAccounts,
+  } = maybeHardhatOptions as HardhatOptions;
+  const contracts = path.resolve(ctx.paths.projectDir, 'contracts');
+  !fs.existsSync(contracts) && fs.mkdirSync(contracts);
+
+  const contract = path.resolve(contracts, 'Hello.sol');
+  fs.writeFileSync(contract, getExampleContract());
+
+  fs.writeFileSync(
+    hardhatConfig,
+    `
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
+module.exports = {
+  solidity: "0.7.3",
+  networks: {
+    hardhat: {
+      accounts: ${JSON.stringify(hardhatAccounts)}
+    },
+  },
+};
+    `.trim()
+  );
+
+  fs.writeFileSync(
+    app,
+    `
+import { HARDHAT_URL, HARDHAT_PRIVATE_KEY } from '@env';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Web3 from 'web3';
+
+import Hello from './artifacts/contracts/Hello.sol/Hello.json';
+
+const styles = StyleSheet.create({
+  center: { alignItems: 'center', justifyContent: 'center' },
+});
+
+export default function App(): JSX.Element {
+  const [message, setMessage] = React.useState<string>('');
+  const web3 = React.useMemo(
+    () => new Web3(new Web3.providers.HttpProvider(HARDHAT_URL)),
+    []
+  );
+  const shouldDeployContract = React.useCallback(
+    async (abi, data, from: string) => {
+      const deployment = new web3.eth.Contract(abi).deploy({ data });
+      const gas = await deployment.estimateGas();
+      const {
+        options: { address: contractAddress },
+      } = await deployment.send({ from, gas });
+      return new web3.eth.Contract(abi, contractAddress);
+    },
+    [web3]
+  );
+  React.useEffect(() => {
+    (async () => {
+      const { privateKey, address } = web3.eth.accounts.privateKeyToAccount(
+        HARDHAT_PRIVATE_KEY
+      );
+      await web3.eth.accounts.privateKeyToAccount(privateKey);
+      const contract = await shouldDeployContract(
+        Hello.abi,
+        Hello.bytecode,
+        address
+      );
+      setMessage(await contract.methods.sayHello('React Native').call());
+    })();
+  }, [shouldDeployContract, setMessage]);
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.center]}>
+      <Text>{message}</Text>
+    </View>
+  );
+}
+    `.trim()
+  );
+
+  execSync(`cd ${projectDir}; npx hardhat compile;`, {
+    stdio: 'inherit',
+  });
+};
+
 const shouldPrepareExample = (ctx: createContext) => {
   if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
     return shouldPrepareTruffleExample(ctx);
+  } else if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
+    return shouldPrepareHardhatExample(ctx);
   }
   return shouldPrepareDefaultExample(ctx);
 };
 
 const maybeReturnGanacheGitIgnore = (ctx: createContext): string | null => {
-  if (ctx.options.blockchainTools) {
+  if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
     return `
 # ganache
 ganache.json
@@ -492,10 +670,22 @@ ganache.json
   return null;
 };
 
+const maybeReturnHardhatGitIgnore = (ctx: createContext): string | null => {
+  if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
+    return `
+# hardhat
+artifacts/
+cache/
+    `.trim();
+  }
+  return null;
+};
+
 const shouldPrepareGitignore = (ctx: createContext) => {
-  const lines = [maybeReturnGanacheGitIgnore(ctx)].filter(
-    (e) => !!e
-  ) as readonly string[];
+  const lines = [
+    maybeReturnGanacheGitIgnore(ctx),
+    maybeReturnHardhatGitIgnore(ctx),
+  ].filter((e) => !!e) as readonly string[];
   fs.writeFileSync(
     ctx.paths.gitignore,
     `
@@ -517,7 +707,12 @@ export const getSuccessMessagePrefix = (ctx: createContext): string | null => {
     return `
 Before starting, you must initialize the simulated blockchain by executing:
 - ${getScriptCommandString(ctx, 'ganache')}
-`.trim();
+    `.trim();
+  } else if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
+    return `
+Before starting, you must initialize the simulated blockchain by executing:
+- ${getScriptCommandString(ctx, 'hardhat')}
+    `.trim();
   }
   return null;
 };
@@ -527,7 +722,12 @@ export const getSuccessMessageSuffix = (ctx: createContext): string | null => {
     return `
 To recompile your contracts you can execute:
 ${chalk.white.bold`npx truffle compile`}
-`.trim();
+    `.trim();
+  } else if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
+    return `
+To recompile your contracts you can execute:
+${chalk.white.bold`npx hardhat compile`}
+    `;
   }
   return `
 By the way, we've added a tiny stub that connects to Infura for you.
@@ -566,7 +766,7 @@ ${sfx}`
 export const create = async (params: createParams): Promise<createResult> => {
   createBaseProject(params);
 
-  const ctx = createBaseContext(params);
+  const ctx = await createBaseContext(params);
 
   if (!fs.existsSync(ctx.paths.projectDir)) {
     return Object.freeze({

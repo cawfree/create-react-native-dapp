@@ -18,8 +18,9 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 - 🚀 **Bootstrapped by Expo.**
   - Easily take advantage of Expo's high quality, well-supported and well-documented library architecture.
   - Supports Android, iOS and the Web.
-- 🍫 **Served with Ganache.**
+- 🍫 **Served with Hardhat or Ganache.**
   - Your generated app comes with a simple example contract which you can deploy and interact with directly.
+  - You can also opt out of either framework to use a bare-bones [Infura](https://infura.io) example.
 - 🏗️ **And it's strictly typed.**
   - It comes pre-configured with TypeScript to help write applications that _scale_.
 
@@ -38,7 +39,7 @@ Next, start the blockchain and run the app:
 ```
 cd my-react-dapp
 yarn ganache
-yarn ios # android,web
+yarn ios # android, web
 ```
 
 ## To programmatically invoke,
@@ -52,7 +53,7 @@ import { create, BlockchainTools } from 'create-react-native-dapp';
   const name = 'my-react-dapp';
   const bundleIdentifier = 'io.github.cawfree.dapp';
   const packageName = 'io.github.cawfree.dapp';
-  const blockchainTools = BlockchainTools.NONE;
+  const blockchainTools = BlockchainTools.HARDHAT;
   const { dir } = await create({
     name,
     bundleIdentifer,
