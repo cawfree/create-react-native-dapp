@@ -75,13 +75,19 @@ const injectShims = (ctx: createContext) =>
 // this will help persist a known template for future migrations.
 
 /* dapp-begin */
-const {Platform} = require('react-native');
+const {Platform, LogBox} = require('react-native');
 
 if (Platform.OS !== 'web') {
   require('react-native-get-random-values');
+  LogBox.ignoreLogs(
+    [
+      "Warning: The provided value 'ms-stream' is not a valid 'responseType'.",
+      "Warning: The provided value 'moz-chunked-arraybuffer' is not a valid 'responseType'.",
+    ],
+  );
 }
 
-if (typeof Buffer === 'undefined') {
+if (typeof Buffer === undefined) {
   global.Buffer = require('buffer').Buffer;
 }
 
