@@ -38,6 +38,7 @@ Next, start the blockchain and run the app:
 ```
 cd my-react-dapp
 yarn ganache
+yarn ios # android,web
 ```
 
 ## To programmatically invoke,
