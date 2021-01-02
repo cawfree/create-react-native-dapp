@@ -28,6 +28,14 @@ MMMMMMMMMMMMMMMMMMMMMMNOl:dXMMMMMMMMMMMMMMMMMMMMMM
 MMMMMMMMMMMMMMMMMMMMMMMWXXNMMMMMMMMMMMMMMMMMMMMMMM
 `.trim();
 
+function validateBundleId(value: string): boolean {
+  return /^[a-zA-Z][a-zA-Z0-9\-.]+$/.test(value);
+}
+
+function validatePackage(value: string): boolean {
+  return /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(value);
+}
+
 (async () => {
   console.clear();
   console.log();
@@ -42,7 +50,7 @@ MMMMMMMMMMMMMMMMMMMMMMMWXXNMMMMMMMMMMMMMMMMMMMMMMM
 
   console.log();
 
-  const { name } = await prompts([
+  const { name, bundleIdentifier, packageName } = await prompts([
     {
       type: 'text',
       name: 'name',
@@ -63,9 +71,35 @@ MMMMMMMMMMMMMMMMMMMMMMMWXXNMMMMMMMMMMMMMMMMMMMMMMM
         return true;
       },
     },
+    {
+      type: 'text',
+      name: 'bundleIdentifier',
+      message: 'What is the iOS bundle identifier?',
+      validate: (value) => {
+        if (!validateBundleId(value)) {
+          return `Only alphanumeric characters, '.', '-', and '_' are allowed, and each '.' must be followed by a letter.`;
+        }
+        return true;
+      },
+    },
+    {
+      type: 'text',
+      name: 'packageName',
+      message: 'What is the Android package name?',
+      validate: (value) => {
+        if (!validatePackage(value)) {
+          return `Only alphanumeric characters, '.' and '_' are allowed, and each '.' must be followed by a letter.`;
+        }
+        return true;
+      },
+    },
   ]);
 
-  const { message, status, shouldUseYarn } = await create({ name });
+  const {
+    message,
+    status,
+    options: { yarn },
+  } = await create({ name, bundleIdentifier, packageName });
 
   if (status === CreationStatus.FAILURE) {
     // eslint-disable-next-line functional/no-throw-statement
@@ -73,7 +107,7 @@ MMMMMMMMMMMMMMMMMMMMMMMWXXNMMMMMMMMMMMMMMMMMMMMMMM
   }
 
   const cmd = (str: string) =>
-    chalk.white.bold`${shouldUseYarn ? 'yarn' : 'npm run-script'} ${str}`;
+    chalk.white.bold`${yarn ? 'yarn' : 'npm run-script'} ${str}`;
 
   console.log();
   console.log(
@@ -82,16 +116,17 @@ MMMMMMMMMMMMMMMMMMMMMMMWXXNMMMMMMMMMMMMMMMMMMMMMMM
   );
   console.log();
   console.log(
+    'Before starting, you must initialize the simulated blockchain by executing:'
+  );
+  console.log('-', cmd('ganache'));
+  console.log();
+  console.log(
     'To compile and run your project in development, execute one of the following commands:'
   );
   console.log('-', cmd('ios'));
   console.log('-', cmd('android'));
   console.log('-', cmd('web'));
-  console.log();
-  console.log('You can also simulate the blockchain by executing:');
-  console.log('-', cmd('ganache'));
   console.log('To recompile your contracts, use:');
   console.log('-', chalk.white.bold`npx truffle compile`);
-
   console.log();
 })();

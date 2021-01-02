@@ -50,7 +50,13 @@ import { create } from 'create-react-native-dapp';
 
 (async () => {
   const name = 'my-react-dapp';
-  const { dir } = await create({ name });
+  const bundleIdentifier = 'io.github.cawfree.dapp';
+  const packageName = 'io.github.cawfree.dapp';
+  const { dir } = await create({
+    name,
+    bundleIdentifer,
+    packageName,
+  });
 })();
 ```
 
