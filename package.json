@@ -52,7 +52,7 @@
     "create-react-native-dapp": "./build/main/cli/index.js"
   },
   "engines": {
-    "node": ">=10"
+    "node": ">=12"
   },
   "dependencies": {
     "chalk": "^4.1.0",

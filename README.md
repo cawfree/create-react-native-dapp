@@ -29,6 +29,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 You don't have to install anything, just run the following command:
 
 ```
+nvm use 12
 npx create-react-native-dapp
 ```
 
