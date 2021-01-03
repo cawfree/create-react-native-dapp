@@ -111,6 +111,14 @@ function validatePackage(value: string): boolean {
       type: 'text',
       name: 'packageName',
       message: 'What is the Android package name?',
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      initial: (last) => {
+        if (!validatePackage(last)) {
+          return undefined;
+        }
+        return last;
+      },
       validate: (value) => {
         if (!validatePackage(value)) {
           return `Only alphanumeric characters, '.' and '_' are allowed, and each '.' must be followed by a letter.`;
