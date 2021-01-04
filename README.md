@@ -54,12 +54,11 @@ import { create, BlockchainTools } from 'create-react-native-dapp';
 (async () => {
   const name = 'my-react-dapp';
   const bundleIdentifier = 'io.github.cawfree.dapp';
-  const packageName = 'io.github.cawfree.dapp';
   const blockchainTools = BlockchainTools.HARDHAT;
   const { dir } = await create({
     name,
     bundleIdentifer,
-    packageName,
+    packageName: bundleIdentifier,
     blockchainTools,
   });
 })();
