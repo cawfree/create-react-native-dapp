@@ -115,6 +115,7 @@ const createBaseContext = async (
   const scriptsDir = path.resolve(projectDir, 'scripts');
   const projectFile = createFileThunk(projectDir);
   const scriptFile = createFileThunk(scriptsDir);
+  const test = path.resolve(projectDir, 'test');
   const paths = {
     // project
     projectDir,
@@ -128,6 +129,7 @@ const createBaseContext = async (
     appJson: projectFile(['app.json']),
     typeRoots: projectFile(['index.d.ts']),
     tsc: projectFile(['tsconfig.json']),
+    test,
     gitignore: projectFile(['.gitignore']),
     // scripts
     scriptsDir,
@@ -449,7 +451,7 @@ pragma solidity >=0.4.22 <0.9.0;
 
 contract Hello {
   string defaultSuffix;
-  constructor() public {
+  constructor() {
     defaultSuffix = '!';
   }
   function sayHello(string memory name) public view returns(string memory) {
@@ -562,7 +564,7 @@ export default function App(): JSX.Element {
 
 const shouldPrepareHardhatExample = (ctx: createContext) => {
   const {
-    paths: { app },
+    paths: { app, test },
     options: { hardhat: maybeHardhatOptions },
   } = ctx;
   const {
@@ -571,6 +573,7 @@ const shouldPrepareHardhatExample = (ctx: createContext) => {
   } = maybeHardhatOptions as HardhatOptions;
   const contracts = path.resolve(ctx.paths.projectDir, 'contracts');
   !fs.existsSync(contracts) && fs.mkdirSync(contracts);
+  !fs.existsSync(test) && fs.mkdirSync(test);
 
   const contract = path.resolve(contracts, 'Hello.sol');
   fs.writeFileSync(contract, getExampleContract());

@@ -25,6 +25,7 @@ export type createContextPaths = {
   readonly appJson: string;
   readonly typeRoots: string;
   readonly tsc: string;
+  readonly test: string;
   readonly gitignore: string;
 };
 
