@@ -211,6 +211,7 @@ const maybeCreateTruffleScripts = (ctx: createContext) => {
 require('dotenv/config');
 const {execSync} = require('child_process');
 
+execSync('npx truffle compile;', {stdio: 'inherit'});
 execSync('node node_modules/.bin/ganache-cli --account_keys_path ./ganache.json', {stdio: 'inherit'});
       `.trim()
     );
@@ -514,10 +515,6 @@ export default function App(): JSX.Element {
 }
     `.trim()
   );
-
-  execSync(`cd ${projectDir}; npx truffle compile;`, {
-    stdio: 'inherit',
-  });
 };
 
 const shouldPrepareDefaultExample = (ctx: createContext) => {
@@ -565,7 +562,7 @@ export default function App(): JSX.Element {
 
 const shouldPrepareHardhatExample = (ctx: createContext) => {
   const {
-    paths: { projectDir, app },
+    paths: { app },
     options: { hardhat: maybeHardhatOptions },
   } = ctx;
   const {
@@ -628,10 +625,9 @@ export default function App(): JSX.Element {
   );
   React.useEffect(() => {
     (async () => {
-      const { privateKey, address } = web3.eth.accounts.privateKeyToAccount(
+      const { address } = await web3.eth.accounts.privateKeyToAccount(
         HARDHAT_PRIVATE_KEY
       );
-      await web3.eth.accounts.privateKeyToAccount(privateKey);
       const contract = await shouldDeployContract(
         Hello.abi,
         Hello.bytecode,
@@ -648,10 +644,6 @@ export default function App(): JSX.Element {
 }
     `.trim()
   );
-
-  execSync(`cd ${projectDir}; npx hardhat compile;`, {
-    stdio: 'inherit',
-  });
 };
 
 const shouldPrepareExample = (ctx: createContext) => {
@@ -666,7 +658,7 @@ const shouldPrepareExample = (ctx: createContext) => {
 const maybeReturnGanacheGitIgnore = (ctx: createContext): string | null => {
   if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
     return `
-# ganache
+# Truffle Suite
 ganache.json
     `.trim();
   }
@@ -676,7 +668,7 @@ ganache.json
 const maybeReturnHardhatGitIgnore = (ctx: createContext): string | null => {
   if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
     return `
-# hardhat
+# Hardhat
 artifacts/
 cache/
     `.trim();
@@ -693,7 +685,7 @@ const shouldPrepareGitignore = (ctx: createContext) => {
     ctx.paths.gitignore,
     `
 ${fs.readFileSync(ctx.paths.gitignore, 'utf-8')}
-# Environment
+# Environment Variables (Store safe defaults in .env.example!)
 .env
 
 ${lines.join('\n\n')}
