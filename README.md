@@ -27,11 +27,22 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
   - Built applications come pre-packaged with `.env` support using [`react-native-dotenv`](https://github.com/goatandsheep/react-native-dotenv) and companion tests for your [contracts](https://ethereum.org/en/learn/).
 
 ## To get started,
+First, create an account on [Expo](https://expo.io/signup) and install the expo-cli and login with your credentials.
 
-You don't have to install anything, just run the following command:
+```bash
+npm install expo-cli --global
+expo login
+```
+
+Next, make sure you use node v12:
 
 ```
 nvm use 12
+```
+
+Now create a new app with the following command:
+
+```
 npx create-react-native-dapp
 ```
 
