@@ -20,6 +20,7 @@ export type createContextPaths = {
   readonly metroConfig: string;
   readonly babelConfig: string;
   readonly env: string;
+  readonly exampleEnv: string;
   readonly app: string;
   readonly appJson: string;
   readonly typeRoots: string;

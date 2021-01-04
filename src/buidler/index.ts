@@ -123,6 +123,7 @@ const createBaseContext = async (
     metroConfig: projectFile(['metro.config.js']),
     babelConfig: projectFile(['babel.config.js']),
     env: projectFile(['.env']),
+    exampleEnv: projectFile(['.env.example']),
     app: projectFile(['App.tsx']),
     appJson: projectFile(['app.json']),
     typeRoots: projectFile(['index.d.ts']),
@@ -230,6 +231,7 @@ const maybeCreateHardhatScripts = (ctx: createContext) => {
 require('dotenv/config');
 const {execSync} = require('child_process');
 
+execSync('npx hardhat compile', {stdio: 'inherit'});
 execSync('npx hardhat node', {stdio: 'inherit'});
       `.trim()
     );
@@ -425,7 +427,8 @@ const shouldWriteEnv = (ctx: createContext) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ([name, _type, value]) => `${name}=${value}`
   );
-  return fs.writeFileSync(ctx.paths.env, `${lines.join('\n')}\n`);
+  fs.writeFileSync(ctx.paths.env, `${lines.join('\n')}\n`);
+  fs.copyFileSync(ctx.paths.env, ctx.paths.exampleEnv);
 };
 
 const shouldInstall = (ctx: createContext) =>
