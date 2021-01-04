@@ -606,34 +606,33 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
 });
 
+const shouldDeployContract = async (web3, abi, data, from: string) => {
+  const deployment = new web3.eth.Contract(abi).deploy({ data });
+  const gas = await deployment.estimateGas();
+  const {
+    options: { address: contractAddress },
+  } = await deployment.send({ from, gas });
+  return new web3.eth.Contract(abi, contractAddress);
+};
+
 export default function App(): JSX.Element {
   const [message, setMessage] = React.useState<string>('');
   const web3 = React.useMemo(
     () => new Web3(new Web3.providers.HttpProvider(HARDHAT_URL)),
-    []
-  );
-  const shouldDeployContract = React.useCallback(
-    async (abi, data, from: string) => {
-      const deployment = new web3.eth.Contract(abi).deploy({ data });
-      const gas = await deployment.estimateGas();
-      const {
-        options: { address: contractAddress },
-      } = await deployment.send({ from, gas });
-      return new web3.eth.Contract(abi, contractAddress);
-    },
-    [web3]
+    [HARDHAT_URL]
   );
   React.useEffect(() => {
     (async () => {
       const { address } = await web3.eth.accounts.privateKeyToAccount(HARDHAT_PRIVATE_KEY);
       const contract = await shouldDeployContract(
+        web3,
         Hello.abi,
         Hello.bytecode,
         address
       );
       setMessage(await contract.methods.sayHello('React Native').call());
     })();
-  }, [shouldDeployContract, setMessage]);
+  }, [web3, shouldDeployContract, setMessage, HARDHAT_PRIVATE_KEY]);
   return (
     <View style={[StyleSheet.absoluteFill, styles.center]}>
       <Text>{message}</Text>
