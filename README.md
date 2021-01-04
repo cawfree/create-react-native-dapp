@@ -42,7 +42,7 @@ cd my-react-dapp
 yarn ios # android, web
 ```
 
-> **Note:** If you've initialized your project with `Truffle Suite` or `Hardhat`, you'll need to run `yarn ganache` or `yarn truffle` to simulate the local blockchain prior to running your app.
+> **Note:** If you've initialized your project with `Truffle Suite` or `Hardhat`, you'll need to run `yarn ganache` or `yarn hardhat` to simulate the local blockchain prior to running your app.
 
 ## To programmatically invoke,
 
