@@ -35,7 +35,7 @@ nvm use 12
 npx create-react-native-dapp
 ```
 
-This will walk you through the creation of your Ethereum-enabled application, which works on [**Android**](https://reactnative.dev), [**iOS**](https://reactnative.dev) and the [**Web**](https://github.com/necolas/react-native-web). The resulting project has been `eject`ed from [**Expo**](https://expo.io) and merged with blockchain development tools such as [**Truffle Suite**](https://www.trufflesuite.com/) or [**Hardhat**](https://hardhat.org/).
+This will walk you through the creation of your Ethereum-enabled application, which works on [**Android**](https://reactnative.dev), [**iOS**](https://reactnative.dev) and the [**Web**](https://github.com/necolas/react-native-web). The resulting project has been `eject`ed from [**Expo**](https://expo.io) and merged with your selected blockchain development tools.
 
 To start the app, you can:
 
@@ -44,7 +44,7 @@ cd my-react-dapp
 yarn ios # android, web
 ```
 
-> **Note:** If you've initialized your project with `Truffle Suite` or `Hardhat`, you'll need to run `yarn ganache` or `yarn hardhat` to simulate the local blockchain prior to running your app.
+> ⚠️ **Note:** If you've initialized your project with `Truffle Suite` or `Hardhat`, you'll need to run `yarn ganache` or `yarn hardhat` to simulate the local blockchain prior to running your app.
 
 ## To programmatically invoke,
 
