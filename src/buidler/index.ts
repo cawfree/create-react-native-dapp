@@ -625,9 +625,7 @@ export default function App(): JSX.Element {
   );
   React.useEffect(() => {
     (async () => {
-      const { address } = await web3.eth.accounts.privateKeyToAccount(
-        HARDHAT_PRIVATE_KEY
-      );
+      const { address } = await web3.eth.accounts.privateKeyToAccount(HARDHAT_PRIVATE_KEY);
       const contract = await shouldDeployContract(
         Hello.abi,
         Hello.bytecode,
