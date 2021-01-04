@@ -451,7 +451,7 @@ pragma solidity >=0.4.22 <0.9.0;
 
 contract Hello {
   string defaultSuffix;
-  constructor() {
+  constructor() public {
     defaultSuffix = '!';
   }
   function sayHello(string memory name) public view returns(string memory) {
