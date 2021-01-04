@@ -113,9 +113,10 @@ const createBaseContext = async (
   const { name } = params;
   const projectDir = path.resolve(name);
   const scriptsDir = path.resolve(projectDir, 'scripts');
+  const testsDir = path.resolve(projectDir, 'test');
   const projectFile = createFileThunk(projectDir);
   const scriptFile = createFileThunk(scriptsDir);
-  const test = path.resolve(projectDir, 'test');
+  const testFile = createFileThunk(testsDir);
   const paths = {
     // project
     projectDir,
@@ -129,7 +130,8 @@ const createBaseContext = async (
     appJson: projectFile(['app.json']),
     typeRoots: projectFile(['index.d.ts']),
     tsc: projectFile(['tsconfig.json']),
-    test,
+    testsDir,
+    test: testFile(['Hello.test.js']),
     gitignore: projectFile(['.gitignore']),
     // scripts
     scriptsDir,
@@ -340,7 +342,10 @@ const maybeGetTruffleFlattenedScripts = (ctx: createContext): object => {
 // eslint-disable-next-line @typescript-eslint/ban-types
 const maybeGetHardhatFlattenedScripts = (ctx: createContext): object => {
   if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    return { 'scripts.hardhat': 'node scripts/hardhat' };
+    return {
+      'scripts.hardhat': 'node scripts/hardhat',
+      'scripts.test': 'npx hardhat test',
+    };
   }
   return {};
 };
@@ -360,7 +365,13 @@ const maybeGetHardhatFlattenedDevDependencies = (
   // eslint-disable-next-line @typescript-eslint/ban-types
 ): object => {
   if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    return { 'devDependencies.hardhat': '2.0.6' };
+    return {
+      'devDependencies.hardhat': '2.0.6',
+      'devDependencies.@nomiclabs/hardhat-ethers': '^2.0.1',
+      'devDependencies.@nomiclabs/hardhat-waffle': '^2.0.1',
+      'devDependencies.chai': '^4.2.0',
+      'devDependencies.ethereum-waffle': '^3.2.1',
+    };
   }
   return {};
 };
@@ -564,7 +575,7 @@ export default function App(): JSX.Element {
 
 const shouldPrepareHardhatExample = (ctx: createContext) => {
   const {
-    paths: { app, test },
+    paths: { app, testsDir, test },
     options: { hardhat: maybeHardhatOptions },
   } = ctx;
   const {
@@ -573,7 +584,27 @@ const shouldPrepareHardhatExample = (ctx: createContext) => {
   } = maybeHardhatOptions as HardhatOptions;
   const contracts = path.resolve(ctx.paths.projectDir, 'contracts');
   !fs.existsSync(contracts) && fs.mkdirSync(contracts);
-  !fs.existsSync(test) && fs.mkdirSync(test);
+  !fs.existsSync(testsDir) && fs.mkdirSync(testsDir);
+
+  // Write Test File.
+  fs.writeFileSync(
+    test,
+    `
+const { expect } = require("chai");
+
+describe("Hello", function() {
+  it("Should return the default greeting", async function() {
+    const Hello = await ethers.getContractFactory("Hello");
+    const hello = await Hello.deploy();
+    
+    await hello.deployed();
+
+    expect(await hello.sayHello("React Native")).to.equal("Welcome to React Native!");
+    expect(await hello.sayHello("Web3")).to.equal("Welcome to Web3!");
+  });
+});
+    `
+  );
 
   const contract = path.resolve(contracts, 'Hello.sol');
   fs.writeFileSync(contract, getExampleContract());
@@ -584,6 +615,8 @@ const shouldPrepareHardhatExample = (ctx: createContext) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+require("@nomiclabs/hardhat-waffle");
+
 module.exports = {
   solidity: "0.7.3",
   networks: {
@@ -722,6 +755,9 @@ ${chalk.white.bold`npx truffle compile`}
     return `
 To recompile your contracts you can execute:
 ${chalk.white.bold`npx hardhat compile`}
+
+You can also test your contracts using:
+${getScriptCommandString(ctx, 'test')}
     `;
   }
   return `
@@ -729,7 +765,6 @@ By the way, we've added a tiny stub that connects to Infura for you.
 You'll need to fill in an INFURA_API_KEY in your ${chalk.white
     .bold`.env`} for this to work.
   `.trim();
-  return ``;
 };
 
 export const getSuccessMessage = (ctx: createContext): string => {

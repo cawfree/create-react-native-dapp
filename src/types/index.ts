@@ -13,6 +13,7 @@ export type createContextPaths = {
   /* dirs */
   readonly projectDir: string;
   readonly scriptsDir: string;
+  readonly testsDir: string;
   /* files */
   readonly index: string;
   readonly postinstall: string;
