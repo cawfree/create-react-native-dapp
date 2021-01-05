@@ -30,7 +30,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 First you'll need to create an account on [**Expo**](https://expo.io/signup) and install the [`expo-cli`](https://docs.expo.io/workflow/expo-cli/) and sign in with your credentials. This is because we rely upon `expo eject` when building your app, which currently [requires you to be signed in](https://forums.expo.io/t/newly-created-app-crashes-on-ios-sim/45566).
 
 ```bash
-npm install expo-cli --global
+npm i -g expo-cli
 expo login
 ```
 
