@@ -23,6 +23,7 @@
         "libauth",
         "mkdir",
         "nodeify",
+        "nomiclabs",
         "prettierignore",
         "randombytes",
         "sandboxed",

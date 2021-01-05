@@ -75,12 +75,14 @@ const createFileThunk = (root: string) => (f: readonly string[]): string => {
 const maybeTruffleOptions = (
   params: createParams,
   projectFile: (f: readonly string[]) => string,
-  scriptFile: (f: readonly string[]) => string
+  scriptFile: (f: readonly string[]) => string,
+  migrationFile: (f: readonly string[]) => string
 ): TruffleOptions | null => {
   if (params.blockchainTools === BlockchainTools.TRUFFLE) {
     return {
       contract: projectFile(['contracts', 'Hello.sol']),
       ganache: scriptFile(['ganache.js']),
+      initialMigration: migrationFile(['1_initial_migration.js']),
     } as TruffleOptions;
   }
   return null;
@@ -114,9 +116,11 @@ const createBaseContext = async (
   const projectDir = path.resolve(name);
   const scriptsDir = path.resolve(projectDir, 'scripts');
   const testsDir = path.resolve(projectDir, 'test');
+  const migrationsDir = path.resolve(projectDir, 'migrations');
   const projectFile = createFileThunk(projectDir);
   const scriptFile = createFileThunk(scriptsDir);
   const testFile = createFileThunk(testsDir);
+  const migrationFile = createFileThunk(migrationsDir);
   const paths = {
     // project
     projectDir,
@@ -130,6 +134,9 @@ const createBaseContext = async (
     appJson: projectFile(['app.json']),
     typeRoots: projectFile(['index.d.ts']),
     tsc: projectFile(['tsconfig.json']),
+    // Migrations
+    migrationsDir,
+    // Tests
     testsDir,
     test: testFile(['Hello.test.js']),
     gitignore: projectFile(['.gitignore']),
@@ -140,7 +147,12 @@ const createBaseContext = async (
   const options = {
     ...params,
     yarn: fs.existsSync(projectFile(['yarn.lock'])),
-    truffle: maybeTruffleOptions(params, projectFile, scriptFile),
+    truffle: maybeTruffleOptions(
+      params,
+      projectFile,
+      scriptFile,
+      migrationFile
+    ),
     hardhat: await maybeHardhatOptions(params, projectFile, scriptFile),
   };
 
@@ -334,7 +346,10 @@ const shouldPrepareTsc = (ctx: createContext) =>
 // eslint-disable-next-line @typescript-eslint/ban-types
 const maybeGetTruffleFlattenedScripts = (ctx: createContext): object => {
   if (ctx.options.truffle) {
-    return { 'scripts.ganache': 'node scripts/ganache' };
+    return {
+      'scripts.ganache': 'node scripts/ganache',
+      'scripts.test': 'npx truffle test',
+    };
   }
   return {};
 };
@@ -473,7 +488,7 @@ contract Hello {
 
 const shouldPrepareTruffleExample = (ctx: createContext) => {
   const {
-    paths: { projectDir, app },
+    paths: { projectDir, app, test },
     options,
   } = ctx;
   const { truffle } = options;
@@ -481,6 +496,39 @@ const shouldPrepareTruffleExample = (ctx: createContext) => {
   execSync(`cd ${projectDir}; npx truffle init;`, {
     stdio: 'inherit',
   });
+
+  // Write Test File.
+  fs.writeFileSync(
+    test,
+    `
+const { assert } = require('console');
+const Hello = artifacts.require('Hello');
+
+contract('Hello', (accounts) => {
+  let instance;
+  beforeEach('should setup the contract instance', async () => {
+    instance = await Hello.deployed();
+  });
+  it('should return the list of accounts', async () => {
+    const result = await instance.sayHello.call('React Native');
+    assert(result === 'Welcome to React Native!');
+  });
+});
+    `.trim()
+  );
+
+  fs.writeFileSync(
+    (truffle as TruffleOptions).initialMigration,
+    `
+const Migrations = artifacts.require('Migrations');
+const Hello = artifacts.require('Hello');
+
+module.exports = function (deployer) {
+  deployer.deploy(Migrations);
+  deployer.deploy(Hello);
+};
+    `.trim()
+  );
 
   fs.writeFileSync((truffle as TruffleOptions).contract, getExampleContract());
   fs.writeFileSync(
@@ -750,6 +798,9 @@ export const getSuccessMessageSuffix = (ctx: createContext): string | null => {
     return `
 To recompile your contracts you can execute:
 ${chalk.white.bold`npx truffle compile`}
+
+You can also test your contracts using:
+${getScriptCommandString(ctx, 'test')}
     `.trim();
   } else if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
     return `

@@ -14,6 +14,7 @@ export type createContextPaths = {
   readonly projectDir: string;
   readonly scriptsDir: string;
   readonly testsDir: string;
+  readonly migrationsDir: string;
   /* files */
   readonly index: string;
   readonly postinstall: string;
@@ -40,6 +41,7 @@ export type createParams = {
 export type TruffleOptions = {
   readonly contract: string;
   readonly ganache: string;
+  readonly initialMigration: string;
 };
 
 export type HardhatAccount = {

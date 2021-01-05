@@ -23,7 +23,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
   - You can also opt out of either framework to use a bare-bones [Infura](https://infura.io) example.
 - 🏗️ **It's strictly typed.**
   - It comes pre-configured with TypeScript to help write applications that _scale_.
-- 👊 **And it's ready to go.**
+- 😉 **And it's ready to go.**
   - Built applications come pre-packaged with `.env` support using [`react-native-dotenv`](https://github.com/goatandsheep/react-native-dotenv) and companion tests for your [contracts](https://ethereum.org/en/learn/).
 
 ## To get started,
