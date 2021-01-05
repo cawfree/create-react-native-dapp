@@ -27,7 +27,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
   - Built applications come pre-packaged with `.env` support using [`react-native-dotenv`](https://github.com/goatandsheep/react-native-dotenv) and companion tests for your [contracts](https://ethereum.org/en/learn/).
 
 ## To get started,
-First, create an account on [**Expo**](https://expo.io/signup) and install the expo-cli and login with your credentials.
+First you'll need to create an account on [**Expo**](https://expo.io/signup) and install the [`expo-cli`](https://docs.expo.io/workflow/expo-cli/) and sign in with your credentials. This is because we rely upon `expo eject` when building your app, which currently [requires you to be signed in](https://forums.expo.io/t/newly-created-app-crashes-on-ios-sim/45566).
 
 ```bash
 npm install expo-cli --global
