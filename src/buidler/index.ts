@@ -24,19 +24,24 @@ import {
 const prettyStringify = (obj: object): string => JSON.stringify(obj, null, 2);
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-const injectFlattenedJsonToFile = (file: string, options: object) => {
+const injectFlattenedJsonToFile = (
+  file: string,
+  options: object,
+  maybeUnflattened?: object
+) => {
   !fs.existsSync(file) && fs.writeFileSync(file, JSON.stringify({}));
   fs.writeFileSync(
     file,
-    prettyStringify(
-      unflatten({
+    prettyStringify({
+      ...unflatten({
         ...(flatten(
           JSON.parse(fs.readFileSync(file, 'utf-8'))
           // eslint-disable-next-line @typescript-eslint/ban-types
         ) as object),
         ...options,
-      })
-    )
+      }),
+      ...(typeof maybeUnflattened === 'object' ? maybeUnflattened : {}),
+    })
   );
 };
 
@@ -47,7 +52,7 @@ const createBaseProject = ({ name }: createParams) =>
 
 const ejectExpoProject = (ctx: createContext) => {
   const {
-    options: { bundleIdentifier, packageName },
+    options: { bundleIdentifier, packageName, uriScheme },
   } = ctx;
   const {
     paths: { appJson },
@@ -56,6 +61,7 @@ const ejectExpoProject = (ctx: createContext) => {
   injectFlattenedJsonToFile(appJson, {
     'expo.ios.bundleIdentifier': bundleIdentifier,
     'expo.android.package': packageName,
+    'expo.scheme': uriScheme,
   });
   return execSync(`cd ${ctx.paths.projectDir}; expo eject --non-interactive;`, {
     stdio: 'inherit',
@@ -143,6 +149,7 @@ const createBaseContext = async (
     // scripts
     scriptsDir,
     postinstall: scriptFile(['postinstall.js']),
+    eslint: projectFile(['.eslintrc.json']),
   };
   const options = {
     ...params,
@@ -334,6 +341,7 @@ const shouldPrepareTsc = (ctx: createContext) =>
         resolveJsonModule: true,
         typeRoots: ['index.d.ts'],
       },
+      include: ['**/*.ts', '**/*.tsx'],
       exclude: [
         'node_modules',
         'babel.config.js',
@@ -392,31 +400,62 @@ const maybeGetHardhatFlattenedDevDependencies = (
 };
 
 const preparePackage = (ctx: createContext) =>
-  injectFlattenedJsonToFile(ctx.paths.pkg, {
-    // scripts
-    'scripts.postinstall': 'node scripts/postinstall',
-    ...maybeGetTruffleFlattenedScripts(ctx),
-    ...maybeGetHardhatFlattenedScripts(ctx),
-    // dependencies
-    'dependencies.base-64': '1.0.0',
-    'dependencies.buffer': '6.0.3',
-    'dependencies.web3': '1.3.1',
-    'dependencies.node-libs-browser': '2.2.1',
-    'dependencies.path-browserify': '0.0.0',
-    'dependencies.react-native-stream': '0.1.9',
-    'dependencies.react-native-crypto': '2.2.0',
-    'dependencies.react-native-get-random-values': '1.5.0',
-    'dependencies.react-native-dotenv': '2.4.3',
-    // devDependencies
-    'devDependencies.dotenv': '8.2.0',
-    ...maybeGetTruffleFlattenedDevDependencies(ctx),
-    ...maybeGetHardhatFlattenedDevDependencies(ctx),
-    // react-native
-    'react-native.stream': 'react-native-stream',
-    'react-native.crypto': 'react-native-crypto',
-    'react-native.path': 'path-browserify',
-    'react-native.process': 'node-libs-browser/mock/process',
-  });
+  injectFlattenedJsonToFile(
+    ctx.paths.pkg,
+    {
+      license: 'MIT',
+      author: 'Alex Thomas (@cawfree) <hello@cawfree.com>',
+      keywords: [
+        'react',
+        'react-native',
+        'dapp',
+        'ethereum',
+        'web3',
+        'starter',
+        'react-native-web',
+      ],
+      // scripts
+      'scripts.postinstall': 'node scripts/postinstall',
+      ...maybeGetTruffleFlattenedScripts(ctx),
+      ...maybeGetHardhatFlattenedScripts(ctx),
+      // husky
+      'husky.hooks.pre-commit': 'lint-staged',
+      // dependencies
+      'dependencies.base-64': '1.0.0',
+      'dependencies.buffer': '6.0.3',
+      'dependencies.web3': '1.3.1',
+      'dependencies.node-libs-browser': '2.2.1',
+      'dependencies.path-browserify': '0.0.0',
+      'dependencies.react-native-stream': '0.1.9',
+      'dependencies.react-native-crypto': '2.2.0',
+      'dependencies.react-native-get-random-values': '1.5.0',
+      'dependencies.react-native-dotenv': '2.4.3',
+      // devDependencies
+      'devDependencies.dotenv': '8.2.0',
+      'devDependencies.prettier': '2.2.1',
+      'devDependencies.husky': '4.3.8',
+      'devDependencies.@typescript-eslint/eslint-plugin': '^4.0.1',
+      'devDependencies.@typescript-eslint/parser': '^4.0.1',
+      'devDependencies.eslint': '^7.8.0',
+      'devDependencies.eslint-config-prettier': '^6.11.0',
+      'devDependencies.eslint-plugin-eslint-comments': '^3.2.0',
+      'devDependencies.eslint-plugin-functional': '^3.0.2',
+      'devDependencies.eslint-plugin-import': '^2.22.0',
+      'devDependencies.lint-staged': '10.5.3',
+      ...maybeGetTruffleFlattenedDevDependencies(ctx),
+      ...maybeGetHardhatFlattenedDevDependencies(ctx),
+      // react-native
+      'react-native.stream': 'react-native-stream',
+      'react-native.crypto': 'react-native-crypto',
+      'react-native.path': 'path-browserify',
+      'react-native.process': 'node-libs-browser/mock/process',
+    },
+    {
+      'lint-staged': {
+        '*.{ts,tsx}': "eslint --ext '.ts,.tsx' -c .eslintrc.json",
+      },
+    }
+  );
 
 const shouldPrepareMetro = (ctx: createContext) =>
   fs.writeFileSync(
@@ -449,6 +488,49 @@ module.exports = function(api) {
   };
 };
     `.trim()
+  );
+
+const shouldPrepareEslint = (ctx: createContext) =>
+  fs.writeFileSync(
+    ctx.paths.eslint,
+    JSON.stringify({
+      root: true,
+      parser: '@typescript-eslint/parser',
+      //parserOptions: { project: './tsconfig.json' },
+      env: { es6: true },
+      ignorePatterns: ['node_modules', 'build', 'coverage'],
+      plugins: ['import', 'eslint-comments', 'functional'],
+      extends: [
+        'eslint:recommended',
+        'plugin:eslint-comments/recommended',
+        'plugin:@typescript-eslint/recommended',
+        'plugin:import/typescript',
+        'plugin:functional/lite',
+        'prettier',
+        'prettier/@typescript-eslint',
+      ],
+      globals: {
+        //BigInt: true,
+        console: true,
+        __DEV__: true,
+      },
+      rules: {
+        '@typescript-eslint/explicit-module-boundary-types': 'off',
+        'eslint-comments/disable-enable-pair': [
+          'error',
+          { allowWholeFile: true },
+        ],
+        'eslint-comments/no-unused-disable': 'error',
+        'import/order': [
+          'error',
+          { 'newlines-between': 'always', alphabetize: { order: 'asc' } },
+        ],
+        'sort-imports': [
+          'error',
+          { ignoreDeclarationSort: true, ignoreCase: true },
+        ],
+      },
+    })
   );
 
 const shouldWriteEnv = (ctx: createContext) => {
@@ -679,7 +761,7 @@ module.exports = {
   fs.writeFileSync(
     app,
     `
-import { HARDHAT_URL, HARDHAT_PRIVATE_KEY } from '@env';
+import { HARDHAT_PRIVATE_KEY, HARDHAT_URL } from '@env';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Web3 from 'web3';
@@ -734,6 +816,12 @@ const shouldPrepareExample = (ctx: createContext) => {
     return shouldPrepareHardhatExample(ctx);
   }
   return shouldPrepareDefaultExample(ctx);
+};
+
+const shouldPrettify = (ctx: createContext) => {
+  execSync(`cd ${ctx.paths.projectDir}; yarn prettier --write .`, {
+    stdio: 'inherit',
+  });
 };
 
 const maybeReturnGanacheGitIgnore = (ctx: createContext): string | null => {
@@ -865,6 +953,7 @@ export const create = async (params: createParams): Promise<createResult> => {
   preparePackage(ctx);
   shouldPrepareMetro(ctx);
   shouldPrepareBabel(ctx);
+  shouldPrepareEslint(ctx);
   shouldPrepareTypeRoots(ctx);
   shouldPrepareTsc(ctx);
   shouldPrepareGitignore(ctx);
@@ -872,6 +961,7 @@ export const create = async (params: createParams): Promise<createResult> => {
 
   shouldInstall(ctx);
   shouldPrepareExample(ctx);
+  shouldPrettify(ctx);
 
   return Object.freeze({
     ...ctx,

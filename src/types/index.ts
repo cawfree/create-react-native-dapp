@@ -29,6 +29,7 @@ export type createContextPaths = {
   readonly tsc: string;
   readonly test: string;
   readonly gitignore: string;
+  readonly eslint: string;
 };
 
 export type createParams = {
@@ -36,6 +37,7 @@ export type createParams = {
   readonly bundleIdentifier: string;
   readonly packageName: string;
   readonly blockchainTools: BlockchainTools;
+  readonly uriScheme: string;
 };
 
 export type TruffleOptions = {

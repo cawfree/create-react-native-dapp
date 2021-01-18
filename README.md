@@ -21,23 +21,20 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 - 🍫 **Served with Hardhat or Ganache.**
   - Your generated app comes with a simple example contract which you can deploy and interact with directly.
   - You can also opt out of either framework to use a bare-bones [Infura](https://infura.io) example.
-- 🏗️ **It's strictly typed.**
+- 🏗️ **It's typed, and pretty.**
   - It comes pre-configured with TypeScript to help write applications that _scale_.
+  - It's integrated with [**prettier**](https://prettier.io/) and [**husky**](https://github.com/typicode/husky) to ensure coding standards are enforced right from the beginning.
 - 😉 **And it's ready to go.**
   - Built applications come pre-packaged with `.env` support using [`react-native-dotenv`](https://github.com/goatandsheep/react-native-dotenv) and companion tests for your [contracts](https://ethereum.org/en/learn/).
+  - Projects are initialized using deep linking so external navigation is a breeze.
 
 ## To get started,
+
 First you'll need to create an account on [**Expo**](https://expo.io/signup) and install the [`expo-cli`](https://docs.expo.io/workflow/expo-cli/) and sign in with your credentials. This is because we rely upon `expo eject` when building your app, which currently [requires you to be signed in](https://forums.expo.io/t/newly-created-app-crashes-on-ios-sim/45566).
 
 ```bash
 npm i -g expo-cli
 expo login
-```
-
-Next, check to make sure you're using a version of Node.js that's `>=12.0.0`:
-
-```
-nvm use 12
 ```
 
 Okay, we're ready to go!
@@ -68,11 +65,13 @@ import { create, BlockchainTools } from 'create-react-native-dapp';
   const name = 'my-react-dapp';
   const bundleIdentifier = 'io.github.cawfree.dapp';
   const blockchainTools = BlockchainTools.HARDHAT;
+  const uriScheme = 'myapp://';
   const { dir } = await create({
     name,
     bundleIdentifer,
     packageName: bundleIdentifier,
     blockchainTools,
+    uriScheme,
   });
 })();
 ```

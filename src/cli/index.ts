@@ -36,6 +36,10 @@ function validatePackage(value: string): boolean {
   return /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(value);
 }
 
+function validateUriScheme(value: string): boolean {
+  return /^[a-z0-9]+$/.test(value);
+}
+
 (async () => {
   console.clear();
   console.log();
@@ -55,6 +59,7 @@ function validatePackage(value: string): boolean {
     bundleIdentifier,
     packageName,
     blockchainTools,
+    uriScheme,
   } = await prompts([
     {
       type: 'text',
@@ -100,6 +105,7 @@ function validatePackage(value: string): boolean {
       type: 'text',
       name: 'bundleIdentifier',
       message: 'What is the iOS bundle identifier?',
+      initial: 'com.myreactdapp',
       validate: (value) => {
         if (!validateBundleId(value)) {
           return `Only alphanumeric characters, '.', '-', and '_' are allowed, and each '.' must be followed by a letter.`;
@@ -126,6 +132,18 @@ function validatePackage(value: string): boolean {
         return true;
       },
     },
+    {
+      type: 'text',
+      name: 'uriScheme',
+      message: 'What is the URI scheme?',
+      initial: 'myreactdapp',
+      validate: (value) => {
+        if (!validateUriScheme(value)) {
+          return `Only lowercase alphanumeric characters are allowed.`;
+        }
+        return true;
+      },
+    },
   ]);
 
   const { status, message } = await create({
@@ -133,6 +151,7 @@ function validatePackage(value: string): boolean {
     bundleIdentifier,
     packageName,
     blockchainTools,
+    uriScheme,
   });
 
   if (status === CreationStatus.FAILURE) {
