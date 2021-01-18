@@ -65,7 +65,7 @@ import { create, BlockchainTools } from 'create-react-native-dapp';
   const name = 'my-react-dapp';
   const bundleIdentifier = 'io.github.cawfree.dapp';
   const blockchainTools = BlockchainTools.HARDHAT;
-  const uriScheme = 'myapp://';
+  const uriScheme = 'myapp'; // navigate using myapp://some/path
   const { dir } = await create({
     name,
     bundleIdentifer,
