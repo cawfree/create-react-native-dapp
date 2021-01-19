@@ -664,7 +664,7 @@ const shouldPrepareDefaultExample = (ctx: createContext) => {
   fs.writeFileSync(
     ctx.paths.app,
     `
-import {INFURA_API_KEY} from '@env';
+import { INFURA_API_KEY } from '@env';
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
 import Web3 from 'web3';
@@ -678,7 +678,6 @@ export default function App(): JSX.Element {
     () =>
       new Web3(
         new Web3.providers.HttpProvider(
-          '',
           \`https://ropsten.infura.io/v3/\${INFURA_API_KEY}\`
         )
       ),
