@@ -150,6 +150,7 @@ const createBaseContext = async (
     scriptsDir,
     postinstall: scriptFile(['postinstall.js']),
     eslint: projectFile(['.eslintrc.json']),
+    cspell: projectFile(['.cspell.json']),
   };
   const options = {
     ...params,
@@ -326,6 +327,13 @@ ${stringsToRender.join('\n')}
     `.trim()
   );
 };
+
+const shouldPrepareSpelling = (ctx: createContext) => fs.writeFileSync(
+  ctx.paths.cspell,
+  JSON.stringify({
+    words: ["bytecode", "dapp"],
+  }),
+);
 
 const shouldPrepareTsc = (ctx: createContext) =>
   fs.writeFileSync(
@@ -954,6 +962,7 @@ export const create = async (params: createParams): Promise<createResult> => {
   shouldPrepareBabel(ctx);
   shouldPrepareEslint(ctx);
   shouldPrepareTypeRoots(ctx);
+  shouldPrepareSpelling(ctx);
   shouldPrepareTsc(ctx);
   shouldPrepareGitignore(ctx);
   shouldWriteEnv(ctx);

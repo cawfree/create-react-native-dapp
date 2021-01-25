@@ -30,6 +30,7 @@ export type createContextPaths = {
   readonly test: string;
   readonly gitignore: string;
   readonly eslint: string;
+  readonly cspell: string;
 };
 
 export type createParams = {
