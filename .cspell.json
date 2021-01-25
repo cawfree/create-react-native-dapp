@@ -19,6 +19,7 @@
         "esnext",
         "execa",
         "exponentiate",
+        "gitkeep",
         "globby",
         "libauth",
         "mkdir",
@@ -32,6 +33,7 @@
         "transpiled",
         "typedoc",
         "unflatten",
+        "Unflattened",
         "unimodules",
         "untracked"
     ],

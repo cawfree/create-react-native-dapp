@@ -7,26 +7,23 @@ import { ethers } from 'ethers';
 import { flatten, unflatten } from 'flat';
 
 import {
-  BlockchainTools,
   createContext,
-  createContextOptions,
-  createContextPaths,
   createParams,
   createResult,
   CreationStatus,
   EnvVariable,
   EnvVariables,
   HardhatOptions,
-  TruffleOptions,
 } from '../types';
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 const prettyStringify = (obj: object): string => JSON.stringify(obj, null, 2);
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 const injectFlattenedJsonToFile = (
   file: string,
+  // eslint-disable-next-line @typescript-eslint/ban-types
   options: object,
+  // eslint-disable-next-line @typescript-eslint/ban-types
   maybeUnflattened?: object
 ) => {
   !fs.existsSync(file) && fs.writeFileSync(file, JSON.stringify({}));
@@ -52,18 +49,18 @@ const createBaseProject = ({ name }: createParams) =>
 
 const ejectExpoProject = (ctx: createContext) => {
   const {
-    options: { bundleIdentifier, packageName, uriScheme },
+    bundleIdentifier, packageName, uriScheme,
   } = ctx;
-  const {
-    paths: { appJson },
-  } = ctx;
+  const { projectDir } = ctx;
+
   // TODO: Icon can go here.
-  injectFlattenedJsonToFile(appJson, {
+
+  injectFlattenedJsonToFile(path.resolve(projectDir, 'app.json'), {
     'expo.ios.bundleIdentifier': bundleIdentifier,
     'expo.android.package': packageName,
     'expo.scheme': uriScheme,
   });
-  return execSync(`cd ${ctx.paths.projectDir}; expo eject --non-interactive;`, {
+  return execSync(`cd ${projectDir}; expo eject --non-interactive;`, {
     stdio: 'inherit',
   });
 };
@@ -78,41 +75,21 @@ const createFileThunk = (root: string) => (f: readonly string[]): string => {
   return path.resolve(root, ...f);
 };
 
-const maybeTruffleOptions = (
-  params: createParams,
-  projectFile: (f: readonly string[]) => string,
-  scriptFile: (f: readonly string[]) => string,
-  migrationFile: (f: readonly string[]) => string
-): TruffleOptions | null => {
-  if (params.blockchainTools === BlockchainTools.TRUFFLE) {
-    return {
-      contract: projectFile(['contracts', 'Hello.sol']),
-      ganache: scriptFile(['ganache.js']),
-      initialMigration: migrationFile(['1_initial_migration.js']),
-    } as TruffleOptions;
-  }
-  return null;
-};
-
-const maybeHardhatOptions = async (
-  params: createParams,
+const hardhatOptions = async (
   projectFile: (f: readonly string[]) => string,
   scriptFile: (f: readonly string[]) => string
-): Promise<HardhatOptions | null> => {
-  if (params.blockchainTools === BlockchainTools.HARDHAT) {
-    const hardhatAccounts = await Promise.all(
-      [...Array(10)].map(async () => {
-        const { privateKey } = await ethers.Wallet.createRandom();
-        return { privateKey, balance: '1000000000000000000000' }; // 1000 ETH
-      })
-    );
-    return {
-      hardhat: scriptFile(['hardhat.js']),
-      hardhatConfig: projectFile(['hardhat.config.js']),
-      hardhatAccounts,
-    } as HardhatOptions;
-  }
-  return null;
+): Promise<HardhatOptions> => {
+  const hardhatAccounts = await Promise.all(
+    [...Array(10)].map(async () => {
+      const { privateKey } = await ethers.Wallet.createRandom();
+      return { privateKey, balance: '1000000000000000000000' }; // 1000 ETH
+    })
+  );
+  return {
+    hardhat: scriptFile(['hardhat.ts']),
+    hardhatConfig: projectFile(['hardhat.config.js']),
+    hardhatAccounts,
+  } as HardhatOptions;
 };
 
 const createBaseContext = async (
@@ -121,68 +98,32 @@ const createBaseContext = async (
   const { name } = params;
   const projectDir = path.resolve(name);
   const scriptsDir = path.resolve(projectDir, 'scripts');
-  const testsDir = path.resolve(projectDir, 'test');
-  const migrationsDir = path.resolve(projectDir, 'migrations');
+  const testsDir = path.resolve(projectDir, '__tests__');
   const projectFile = createFileThunk(projectDir);
   const scriptFile = createFileThunk(scriptsDir);
-  const testFile = createFileThunk(testsDir);
-  const migrationFile = createFileThunk(migrationsDir);
-  const paths = {
-    // project
-    projectDir,
-    index: projectFile(['index.js']),
-    pkg: projectFile(['package.json']),
-    metroConfig: projectFile(['metro.config.js']),
-    babelConfig: projectFile(['babel.config.js']),
-    env: projectFile(['.env']),
-    exampleEnv: projectFile(['.env.example']),
-    app: projectFile(['App.tsx']),
-    appJson: projectFile(['app.json']),
-    typeRoots: projectFile(['index.d.ts']),
-    tsc: projectFile(['tsconfig.json']),
-    // Migrations
-    migrationsDir,
-    // Tests
-    testsDir,
-    test: testFile(['Hello.test.js']),
-    gitignore: projectFile(['.gitignore']),
-    // scripts
-    scriptsDir,
-    postinstall: scriptFile(['postinstall.js']),
-    eslint: projectFile(['.eslintrc.json']),
-    cspell: projectFile(['.cspell.json']),
-  };
-  const options = {
+  const srcDir = path.resolve(projectDir, 'src');
+  return Object.freeze({
     ...params,
     yarn: fs.existsSync(projectFile(['yarn.lock'])),
-    truffle: maybeTruffleOptions(
-      params,
-      projectFile,
-      scriptFile,
-      migrationFile
-    ),
-    hardhat: await maybeHardhatOptions(params, projectFile, scriptFile),
-  };
-
-  const shouldCreateContext = (
-    paths: createContextPaths,
-    options: createContextOptions
-  ): createContext =>
-    Object.freeze({
-      paths,
-      options,
-    });
-
-  return shouldCreateContext(paths, options);
+    hardhat: await hardhatOptions(projectFile, scriptFile),
+    projectDir,
+    scriptsDir,
+    testsDir,
+    srcDir,
+  });
 };
 
 // TODO: Find a nice version.
 const shimProcessVersion = 'v9.40';
 
-const injectShims = (ctx: createContext) =>
+const injectShims = (ctx: createContext) => {
+  const { projectDir } = ctx;
   fs.writeFileSync(
-    ctx.paths.index,
+    path.resolve(projectDir, 'index.js'),
     `
+/* eslint-disable eslint-comments/no-unlimited-disable */
+/* eslint-disable */
+
 // This file has been auto-generated by Ξ create-react-native-dapp Ξ.
 // Feel free to modify it, but please take care to maintain the exact
 // procedure listed between /* dapp-begin */ and /* dapp-end */, as 
@@ -211,106 +152,55 @@ global.atob = global.atob || require('base-64').decode;
 process.version = '${shimProcessVersion}';
 
 import { registerRootComponent } from 'expo';
-const { default: App } = require('./App');
-/* dapp-end */
+const { default: App } = require('./src/App');
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in the Expo client or in a native build,
 // the environment is set up appropriately
 registerRootComponent(App);
-    
+/* dapp-end */
     `.trim()
   );
-
-const maybeCreateTruffleScripts = (ctx: createContext) => {
-  if (ctx.options.truffle) {
-    const {
-      options: {
-        truffle: { ganache },
-      },
-    } = ctx;
-    fs.writeFileSync(
-      ganache,
-      `
-require('dotenv/config');
-const {execSync} = require('child_process');
-
-execSync('npx truffle compile;', {stdio: 'inherit'});
-execSync('node node_modules/.bin/ganache-cli --account_keys_path ./ganache.json', {stdio: 'inherit'});
-      `.trim()
-    );
-  }
 };
 
-const maybeCreateHardhatScripts = (ctx: createContext) => {
-  if (ctx.options.hardhat) {
-    const {
-      options: {
-        hardhat: { hardhat },
-      },
-    } = ctx;
+const createHardhatScripts = (ctx: createContext) => {
+  const {
+    hardhat: { hardhat },
+  } = ctx;
 
-    fs.writeFileSync(
-      hardhat,
-      `
-require('dotenv/config');
-const {execSync} = require('child_process');
+  fs.writeFileSync(
+    hardhat,
+    `
+import 'dotenv/config';
+import * as child_process from 'child_process';
 
-execSync('npx hardhat compile', {stdio: 'inherit'});
-execSync('npx hardhat node', {stdio: 'inherit'});
-      `.trim()
-    );
-  }
+child_process.execSync('npx hardhat compile', { stdio: 'inherit' });
+child_process.execSync('npx hardhat node', { stdio: 'inherit' });
+    `.trim()
+  );
 };
 
 const createScripts = (ctx: createContext) => {
-  fs.mkdirSync(ctx.paths.scriptsDir);
+  const { scriptsDir } = ctx;
+  !fs.existsSync(scriptsDir) && fs.mkdirSync(scriptsDir);
+  const postinstall = path.resolve(scriptsDir, 'postinstall.ts');
   fs.writeFileSync(
-    ctx.paths.postinstall,
+    postinstall,
     `
-require('dotenv/config');
-const {execSync} = require('child_process');
+import 'dotenv/config';
+import * as child_process from 'child_process';
 
-execSync('npx pod-install', {stdio: 'inherit'});
+child_process.execSync('npx pod-install', { stdio: 'inherit' });
     `.trim()
   );
-  maybeCreateTruffleScripts(ctx);
-  maybeCreateHardhatScripts(ctx);
-};
-
-const maybeGetTruffleVariables = (ctx: createContext): EnvVariables => {
-  if (ctx.options.truffle) {
-    return [['GANACHE_URL', 'string', 'http://127.0.0.1:8545']];
-  }
-  return [];
-};
-
-const maybeGetHardhatVariables = (ctx: createContext): EnvVariables => {
-  if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    const {
-      options: { hardhat: maybeHardhatOptions },
-    } = ctx;
-    const { hardhatAccounts } = maybeHardhatOptions as HardhatOptions;
-    return [
-      ['HARDHAT_URL', 'string', 'http://localhost:8545'],
-      ['HARDHAT_PRIVATE_KEY', 'string', hardhatAccounts[0].privateKey],
-    ];
-  }
-  return [];
-};
-
-const maybeGetDefaultVariables = (ctx: createContext): EnvVariables => {
-  if (ctx.options.blockchainTools === BlockchainTools.NONE) {
-    return [['INFURA_API_KEY', 'string', '']];
-  }
-  return [];
+  createHardhatScripts(ctx);
 };
 
 const getAllEnvVariables = (ctx: createContext): EnvVariables => {
+  const { hardhat: { hardhatAccounts } } = ctx;
   return [
-    ...maybeGetTruffleVariables(ctx),
-    ...maybeGetHardhatVariables(ctx),
-    ...maybeGetDefaultVariables(ctx),
+    ['HARDHAT_URL', 'string', 'http://localhost:8545'],
+    ['HARDHAT_PRIVATE_KEY', 'string', hardhatAccounts[0].privateKey],
   ];
 };
 
@@ -319,7 +209,7 @@ const shouldPrepareTypeRoots = (ctx: createContext) => {
     ([name, type]: EnvVariable) => `   export const ${name}: ${type};`
   );
   return fs.writeFileSync(
-    ctx.paths.typeRoots,
+    path.resolve(ctx.projectDir, 'index.d.ts'),
     `
 declare module '@env' {
 ${stringsToRender.join('\n')}
@@ -329,15 +219,15 @@ ${stringsToRender.join('\n')}
 };
 
 const shouldPrepareSpelling = (ctx: createContext) => fs.writeFileSync(
-  ctx.paths.cspell,
-  JSON.stringify({
+  path.resolve(ctx.projectDir, '.cspell.json'),
+  prettyStringify({
     words: ["bytecode", "dapp"],
   }),
 );
 
-const shouldPrepareTsc = (ctx: createContext) =>
+const shouldPrepareTsc = (ctx: createContext) => {
   fs.writeFileSync(
-    ctx.paths.tsc,
+    path.resolve(ctx.projectDir, 'tsconfig.json'),
     prettyStringify({
       compilerOptions: {
         allowSyntheticDefaultImports: true,
@@ -348,6 +238,7 @@ const shouldPrepareTsc = (ctx: createContext) =>
         skipLibCheck: true,
         resolveJsonModule: true,
         typeRoots: ['index.d.ts'],
+        types: ['node'],
       },
       include: ['**/*.ts', '**/*.tsx'],
       exclude: [
@@ -358,58 +249,11 @@ const shouldPrepareTsc = (ctx: createContext) =>
       ],
     })
   );
-
-// eslint-disable-next-line @typescript-eslint/ban-types
-const maybeGetTruffleFlattenedScripts = (ctx: createContext): object => {
-  if (ctx.options.truffle) {
-    return {
-      'scripts.ganache': 'node scripts/ganache',
-      'scripts.test': 'npx truffle test',
-    };
-  }
-  return {};
-};
-
-// eslint-disable-next-line @typescript-eslint/ban-types
-const maybeGetHardhatFlattenedScripts = (ctx: createContext): object => {
-  if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    return {
-      'scripts.hardhat': 'node scripts/hardhat',
-      'scripts.test': 'npx hardhat test',
-    };
-  }
-  return {};
-};
-
-const maybeGetTruffleFlattenedDevDependencies = (
-  ctx: createContext
-  // eslint-disable-next-line @typescript-eslint/ban-types
-): object => {
-  if (ctx.options.truffle) {
-    return { 'devDependencies.ganache-cli': '6.12.1' };
-  }
-  return {};
-};
-
-const maybeGetHardhatFlattenedDevDependencies = (
-  ctx: createContext
-  // eslint-disable-next-line @typescript-eslint/ban-types
-): object => {
-  if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    return {
-      'devDependencies.hardhat': '2.0.6',
-      'devDependencies.@nomiclabs/hardhat-ethers': '^2.0.1',
-      'devDependencies.@nomiclabs/hardhat-waffle': '^2.0.1',
-      'devDependencies.chai': '^4.2.0',
-      'devDependencies.ethereum-waffle': '^3.2.1',
-    };
-  }
-  return {};
 };
 
 const preparePackage = (ctx: createContext) =>
   injectFlattenedJsonToFile(
-    ctx.paths.pkg,
+    path.resolve(ctx.projectDir, 'package.json'),
     {
       license: 'MIT',
       author: 'Alex Thomas (@cawfree) <hello@cawfree.com>',
@@ -423,9 +267,9 @@ const preparePackage = (ctx: createContext) =>
         'react-native-web',
       ],
       // scripts
-      'scripts.postinstall': 'node scripts/postinstall',
-      ...maybeGetTruffleFlattenedScripts(ctx),
-      ...maybeGetHardhatFlattenedScripts(ctx),
+      'scripts.postinstall': 'npx ts-node scripts/postinstall',
+      'scripts.hardhat': 'npx ts-node scripts/hardhat',
+      'scripts.test': 'npx hardhat test',
       // husky
       'husky.hooks.pre-commit': 'lint-staged',
       // dependencies
@@ -450,8 +294,12 @@ const preparePackage = (ctx: createContext) =>
       'devDependencies.eslint-plugin-functional': '^3.0.2',
       'devDependencies.eslint-plugin-import': '^2.22.0',
       'devDependencies.lint-staged': '10.5.3',
-      ...maybeGetTruffleFlattenedDevDependencies(ctx),
-      ...maybeGetHardhatFlattenedDevDependencies(ctx),
+      'devDependencies.@types/node': '14.14.22',
+      'devDependencies.hardhat': '2.0.6',
+      'devDependencies.@nomiclabs/hardhat-ethers': '^2.0.1',
+      'devDependencies.@nomiclabs/hardhat-waffle': '^2.0.1',
+      'devDependencies.chai': '^4.2.0',
+      'devDependencies.ethereum-waffle': '^3.2.1',
       // react-native
       'react-native.stream': 'react-native-stream',
       'react-native.crypto': 'react-native-crypto',
@@ -460,14 +308,14 @@ const preparePackage = (ctx: createContext) =>
     },
     {
       'lint-staged': {
-        '*.{ts,tsx}': "eslint --ext '.ts,.tsx' -c .eslintrc.json",
+        '*.{ts,tsx,js,jsx}': "eslint --ext '.ts,.tsx,.js,.jsx' -c .eslintrc.json",
       },
     }
   );
 
 const shouldPrepareMetro = (ctx: createContext) =>
   fs.writeFileSync(
-    ctx.paths.metroConfig,
+    path.resolve(ctx.projectDir, 'metro.config.js'),
     `
 const extraNodeModules = require('node-libs-browser');
 
@@ -484,7 +332,7 @@ module.exports = {
 
 const shouldPrepareBabel = (ctx: createContext) =>
   fs.writeFileSync(
-    ctx.paths.babelConfig,
+    path.resolve(ctx.projectDir, 'babel.config.js'),
     `
 module.exports = function(api) {
   api.cache(true);
@@ -500,13 +348,20 @@ module.exports = function(api) {
 
 const shouldPrepareEslint = (ctx: createContext) =>
   fs.writeFileSync(
-    ctx.paths.eslint,
-    JSON.stringify({
+    path.resolve(ctx.projectDir, '.eslintrc.json'),
+    prettyStringify({
       root: true,
       parser: '@typescript-eslint/parser',
-      //parserOptions: { project: './tsconfig.json' },
       env: { es6: true },
-      ignorePatterns: ['node_modules', 'build', 'coverage'],
+      ignorePatterns: [
+        'node_modules',
+        'build',
+        'coverage',
+        'babel.config.js',
+        'metro.config.js',
+        'hardhat.config.js',
+        '__tests__/contracts',
+      ],
       plugins: ['import', 'eslint-comments', 'functional'],
       extends: [
         'eslint:recommended',
@@ -546,14 +401,16 @@ const shouldWriteEnv = (ctx: createContext) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ([name, _type, value]) => `${name}=${value}`
   );
-  fs.writeFileSync(ctx.paths.env, `${lines.join('\n')}\n`);
-  fs.copyFileSync(ctx.paths.env, ctx.paths.exampleEnv);
+  const env = path.resolve(ctx.projectDir, '.env');
+  const example = path.resolve(ctx.projectDir, '.env.example');
+  fs.writeFileSync(env, `${lines.join('\n')}\n`);
+  fs.copyFileSync(env, example);
 };
 
 const shouldInstall = (ctx: createContext) =>
   execSync(
-    `cd ${ctx.paths.projectDir}; ${
-      ctx.options.yarn ? 'yarn' : 'npm i'
+    `cd ${ctx.projectDir}; ${
+      ctx.yarn ? 'yarn' : 'npm i'
     }; `.trim(),
     {
       stdio: 'inherit',
@@ -567,7 +424,7 @@ pragma solidity >=0.4.22 <0.9.0;
 
 contract Hello {
   string defaultSuffix;
-  constructor() public {
+  constructor() {
     defaultSuffix = '!';
   }
   function sayHello(string memory name) public view returns(string memory) {
@@ -576,158 +433,37 @@ contract Hello {
 }
 `.trim();
 
-const shouldPrepareTruffleExample = (ctx: createContext) => {
-  const {
-    paths: { projectDir, app, test },
-    options,
-  } = ctx;
-  const { truffle } = options;
-
-  execSync(`cd ${projectDir}; npx truffle init;`, {
-    stdio: 'inherit',
-  });
-
-  // Write Test File.
-  fs.writeFileSync(
-    test,
-    `
-const { assert } = require('console');
-const Hello = artifacts.require('Hello');
-
-contract('Hello', (accounts) => {
-  let instance;
-  beforeEach('should setup the contract instance', async () => {
-    instance = await Hello.deployed();
-  });
-  it('should return the list of accounts', async () => {
-    const result = await instance.sayHello.call('React Native');
-    assert(result === 'Welcome to React Native!');
-  });
-});
-    `.trim()
-  );
-
-  fs.writeFileSync(
-    (truffle as TruffleOptions).initialMigration,
-    `
-const Migrations = artifacts.require('Migrations');
-const Hello = artifacts.require('Hello');
-
-module.exports = function (deployer) {
-  deployer.deploy(Migrations);
-  deployer.deploy(Hello);
-};
-    `.trim()
-  );
-
-  fs.writeFileSync((truffle as TruffleOptions).contract, getExampleContract());
-  fs.writeFileSync(
-    app,
-    `
-import {GANACHE_URL} from '@env';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Web3 from 'web3';
-
-import Hello from './build/contracts/Hello.json'
-import {private_keys as privateKeys} from './ganache.json';
-
-const styles = StyleSheet.create({
-  center: {alignItems: 'center', justifyContent: 'center'},
-});
-
-export default function App(): JSX.Element {
-  const [message, setMessage] = React.useState<string>('');
-  const web3 = React.useMemo(
-    () => new Web3(new Web3.providers.HttpProvider(GANACHE_URL)),
-    []
-  );
-  const shouldDeployContract = React.useCallback(async (abi, data, from: string) => {
-    const deployment = new web3.eth.Contract(abi).deploy({data});
-    const gas = await deployment.estimateGas();
-    const {
-      options: { address: contractAddress },
-    } = await deployment.send({from, gas});
-    return new web3.eth.Contract(abi, contractAddress);
-  }, [web3]);
-  React.useEffect(() => {
-    (async () => {
-      const [address, privateKey] = Object.entries(privateKeys)[0];
-      await web3.eth.accounts.privateKeyToAccount(privateKey);
-      const contract = await shouldDeployContract(Hello.abi, Hello.bytecode, address);
-      setMessage(await contract.methods.sayHello("React Native").call());
-    })();
-  }, [shouldDeployContract, setMessage]);
-  return (
-    <View style={[StyleSheet.absoluteFill, styles.center]}>
-      <Text>{message}</Text>
-    </View>
-  );
-}
-    `.trim()
-  );
-};
-
-const shouldPrepareDefaultExample = (ctx: createContext) => {
-  fs.writeFileSync(
-    ctx.paths.app,
-    `
-import { INFURA_API_KEY } from '@env';
-import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
-import Web3 from 'web3';
-
-const styles = StyleSheet.create({
-  center: { alignItems: 'center', justifyContent: 'center' },
-});
-
-export default function App(): JSX.Element {
-  const web3 = React.useMemo(
-    () =>
-      new Web3(
-        new Web3.providers.HttpProvider(
-          \`https://ropsten.infura.io/v3/\${INFURA_API_KEY}\`
-        )
-      ),
-    []
-  );
-  const [latestBlock, setLatestBlock] = React.useState<any>();
-  React.useEffect(() => {
-    (async () => {
-      setLatestBlock(await web3.eth.getBlock('latest'));
-    })();
-  }, [setLatestBlock, web3]);
-  return (
-    <View style={[StyleSheet.absoluteFill, styles.center]}>
-      <Text>Welcome to React Native!</Text>
-      {!!latestBlock && (
-        <Text>{\`The latest block's mining difficulty is: \${latestBlock.difficulty}.\`}</Text>
-      )}
-    </View>
-  );
-}
-    `.trim()
-  );
-};
-
 const shouldPrepareHardhatExample = (ctx: createContext) => {
   const {
-    paths: { app, testsDir, test },
-    options: { hardhat: maybeHardhatOptions },
+    projectDir,
+    testsDir,
+    srcDir,
+    hardhat: {
+     hardhatConfig,
+     hardhatAccounts,
+    },
   } = ctx;
-  const {
-    hardhatConfig,
-    hardhatAccounts,
-  } = maybeHardhatOptions as HardhatOptions;
-  const contracts = path.resolve(ctx.paths.projectDir, 'contracts');
+
+  const contracts = path.resolve(projectDir, 'contracts');
+
   !fs.existsSync(contracts) && fs.mkdirSync(contracts);
   !fs.existsSync(testsDir) && fs.mkdirSync(testsDir);
 
-  // Write Test File.
+  const contractsTestDir = path.resolve(testsDir, 'contracts');
+  const frontendTestDir = path.resolve(testsDir, 'frontend');
+
+  fs.mkdirSync(contractsTestDir);
+  fs.mkdirSync(frontendTestDir);
+
+  fs.writeFileSync(path.resolve(contractsTestDir, '.gitkeep'), '');
+  fs.writeFileSync(path.resolve(frontendTestDir, '.gitkeep'), '');
+
+  const contractTest = path.resolve(contractsTestDir, 'Hello.test.js');
+
   fs.writeFileSync(
-    test,
+    contractTest,
     `
-const { expect } = require("chai");
+const { expect } = require('chai');
 
 describe("Hello", function() {
   it("Should return the default greeting", async function() {
@@ -761,19 +497,27 @@ module.exports = {
       accounts: ${JSON.stringify(hardhatAccounts)}
     },
   },
+  paths: {
+    sources: './contracts',
+    tests: './__tests__/contracts',
+    cache: './cache',
+    artifacts: './artifacts',
+  },
 };
     `.trim()
   );
 
+  !fs.existsSync(srcDir) && fs.mkdirSync(srcDir);
+
   fs.writeFileSync(
-    app,
+    path.resolve(srcDir, 'App.tsx'),
     `
 import { HARDHAT_PRIVATE_KEY, HARDHAT_URL } from '@env';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Web3 from 'web3';
 
-import Hello from './artifacts/contracts/Hello.sol/Hello.json';
+import Hello from '../artifacts/contracts/Hello.sol/Hello.json';
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
@@ -814,53 +558,48 @@ export default function App(): JSX.Element {
 }
     `.trim()
   );
+
+  const orig = path.resolve(projectDir, 'App.tsx');
+  fs.existsSync(orig) && fs.unlinkSync(orig);
+
+  fs.writeFileSync(path.resolve(projectDir, 'README.md'), `
+
+# 👋 Welcome!
+Thank you so much for using [\`create-react-native-dapp\`](https://github.com/cawfree/create-react-native-dapp)! We wish you the best of luck on your decentralized adventure 🦄.
+
+## 🔗 Links
+  - Raise issues on our [**Issues Page**](https://github.com/cawfree/create-react-native-dapp/issues).
+  - Make feature requests via [**Discord**](https://discord.com/invite/PeqrwpCDwc).
+  - Find out the latest on my [**Twitter**](https://twitter.com/cawfree).
+
+## 🙏 Donations
+If this project has helped you, please consider making a small contribution towards maintenance of this library:
+[**cawfree.eth**](https://etherscan.io/address/0x312e71162df834a87a2684d30562b94816b0f072).
+
+  `.trim());
+
 };
 
 const shouldPrepareExample = (ctx: createContext) => {
-  if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
-    return shouldPrepareTruffleExample(ctx);
-  } else if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    return shouldPrepareHardhatExample(ctx);
-  }
-  return shouldPrepareDefaultExample(ctx);
+  return shouldPrepareHardhatExample(ctx);
 };
 
-const shouldPrettify = (ctx: createContext) => {
-  execSync(`cd ${ctx.paths.projectDir}; yarn prettier --write .`, {
-    stdio: 'inherit',
-  });
-};
-
-const maybeReturnGanacheGitIgnore = (ctx: createContext): string | null => {
-  if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
-    return `
-# Truffle Suite
-ganache.json
-    `.trim();
-  }
-  return null;
-};
-
-const maybeReturnHardhatGitIgnore = (ctx: createContext): string | null => {
-  if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    return `
+const getHardhatGitIgnore = (): string | null => {
+  return `
 # Hardhat
 artifacts/
 cache/
-    `.trim();
-  }
-  return null;
+  `.trim();
 };
 
 const shouldPrepareGitignore = (ctx: createContext) => {
-  const lines = [
-    maybeReturnGanacheGitIgnore(ctx),
-    maybeReturnHardhatGitIgnore(ctx),
-  ].filter((e) => !!e) as readonly string[];
+  const { projectDir } = ctx;
+  const lines = [getHardhatGitIgnore()].filter((e) => !!e) as readonly string[];
+  const gitignore = path.resolve(projectDir, '.gitignore');
   fs.writeFileSync(
-    ctx.paths.gitignore,
+    gitignore,
     `
-${fs.readFileSync(ctx.paths.gitignore, 'utf-8')}
+${fs.readFileSync(gitignore, 'utf-8')}
 # Environment Variables (Store safe defaults in .env.example!)
 .env
 
@@ -871,46 +610,23 @@ ${lines.join('\n\n')}
 };
 
 const getScriptCommandString = (ctx: createContext, str: string) =>
-  chalk.white.bold`${ctx.options.yarn ? 'yarn' : 'npm run-script'} ${str}`;
+  chalk.white.bold`${ctx.yarn ? 'yarn' : 'npm run-script'} ${str}`;
 
 export const getSuccessMessagePrefix = (ctx: createContext): string | null => {
-  if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
-    return `
-Before starting, you must initialize the simulated blockchain by executing:
-- ${getScriptCommandString(ctx, 'ganache')}
-    `.trim();
-  } else if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    return `
+  return `
 Before starting, you must initialize the simulated blockchain by executing:
 - ${getScriptCommandString(ctx, 'hardhat')}
-    `.trim();
-  }
-  return null;
+  `.trim();
 };
 
 export const getSuccessMessageSuffix = (ctx: createContext): string | null => {
-  if (ctx.options.blockchainTools === BlockchainTools.TRUFFLE) {
-    return `
-To recompile your contracts you can execute:
-${chalk.white.bold`npx truffle compile`}
-
-You can also test your contracts using:
-${getScriptCommandString(ctx, 'test')}
-    `.trim();
-  } else if (ctx.options.blockchainTools === BlockchainTools.HARDHAT) {
-    return `
+  return `
 To recompile your contracts you can execute:
 ${chalk.white.bold`npx hardhat compile`}
 
 You can also test your contracts using:
 ${getScriptCommandString(ctx, 'test')}
-    `;
-  }
-  return `
-By the way, we've added a tiny stub that connects to Infura for you.
-You'll need to fill in an INFURA_API_KEY in your ${chalk.white
-    .bold`.env`} for this to work.
-  `.trim();
+  `;
 };
 
 export const getSuccessMessage = (ctx: createContext): string => {
@@ -944,7 +660,7 @@ export const create = async (params: createParams): Promise<createResult> => {
 
   const ctx = await createBaseContext(params);
 
-  if (!fs.existsSync(ctx.paths.projectDir)) {
+  if (!fs.existsSync(ctx.projectDir)) {
     return Object.freeze({
       ...ctx,
       status: CreationStatus.FAILURE,
@@ -956,6 +672,7 @@ export const create = async (params: createParams): Promise<createResult> => {
   ejectExpoProject(ctx);
   injectShims(ctx);
   createScripts(ctx);
+  // TODO: generate some client side tests
   createTests();
   preparePackage(ctx);
   shouldPrepareMetro(ctx);
@@ -966,10 +683,8 @@ export const create = async (params: createParams): Promise<createResult> => {
   shouldPrepareTsc(ctx);
   shouldPrepareGitignore(ctx);
   shouldWriteEnv(ctx);
-
   shouldInstall(ctx);
   shouldPrepareExample(ctx);
-  shouldPrettify(ctx);
 
   return Object.freeze({
     ...ctx,

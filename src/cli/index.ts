@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import prompts from 'prompts';
 
 import { create } from '../buidler';
-import { CreationStatus, BlockchainTools } from '../types';
+import { CreationStatus } from '../types';
 
 const defaultPadding = 5;
 
@@ -58,7 +58,6 @@ function validateUriScheme(value: string): boolean {
     name,
     bundleIdentifier,
     packageName,
-    blockchainTools,
     uriScheme,
   } = await prompts([
     {
@@ -80,26 +79,6 @@ function validateUriScheme(value: string): boolean {
         }
         return true;
       },
-    },
-    {
-      type: 'select',
-      name: 'blockchainTools',
-      message: 'Which blockchain tools would you like to use?',
-      choices: [
-        {
-          title: '👷 Hardhat',
-          value: BlockchainTools.HARDHAT,
-        },
-        {
-          title: '🍫 Truffle Suite',
-          value: BlockchainTools.TRUFFLE,
-        },
-        {
-          title: '💨 None',
-          value: BlockchainTools.NONE,
-        },
-      ],
-      initial: 0,
     },
     {
       type: 'text',
@@ -150,7 +129,6 @@ function validateUriScheme(value: string): boolean {
     name,
     bundleIdentifier,
     packageName,
-    blockchainTools,
     uriScheme,
   });
 
