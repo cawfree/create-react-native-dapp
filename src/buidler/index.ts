@@ -68,9 +68,6 @@ const ejectExpoProject = (ctx: createContext) => {
 // TODO: Configure the application icon in Expo.
 const setAppIcon = () => null;
 
-// TODO: Add jest and show a working demonstration of solc.
-const createTests = () => null;
-
 const createFileThunk = (root: string) => (f: readonly string[]): string => {
   return path.resolve(root, ...f);
 };
@@ -130,7 +127,7 @@ const injectShims = (ctx: createContext) => {
 // this will help persist a known template for future migrations.
 
 /* dapp-begin */
-const {Platform, LogBox} = require('react-native');
+const { Platform, LogBox } = require('react-native');
 
 if (Platform.OS !== 'web') {
   require('react-native-get-random-values');
@@ -151,7 +148,7 @@ global.atob = global.atob || require('base-64').decode;
 
 process.version = '${shimProcessVersion}';
 
-import { registerRootComponent } from 'expo';
+const { registerRootComponent } = require('expo');
 const { default: App } = require('./src/App');
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
@@ -238,7 +235,7 @@ const shouldPrepareTsc = (ctx: createContext) => {
         skipLibCheck: true,
         resolveJsonModule: true,
         typeRoots: ['index.d.ts'],
-        types: ['node'],
+        types: ['node', 'jest'],
       },
       include: ['**/*.ts', '**/*.tsx'],
       exclude: [
@@ -246,6 +243,10 @@ const shouldPrepareTsc = (ctx: createContext) => {
         'babel.config.js',
         'metro.config.js',
         'jest.config.js',
+        '**/*.test.tsx',
+        '**/*.test.ts',
+        '**/*.spec.tsx',
+        '**/*.spec.ts',
       ],
     })
   );
@@ -295,6 +296,7 @@ const preparePackage = (ctx: createContext) =>
       'devDependencies.eslint-plugin-import': '^2.22.0',
       'devDependencies.lint-staged': '10.5.3',
       'devDependencies.@types/node': '14.14.22',
+      "devDependencies.@types/jest": '^26.0.20',
       'devDependencies.hardhat': '2.0.6',
       'devDependencies.@nomiclabs/hardhat-ethers': '^2.0.1',
       'devDependencies.@nomiclabs/hardhat-waffle': '^2.0.1',
@@ -490,6 +492,7 @@ describe("Hello", function() {
     `
 import React from 'react';
 import renderer from 'react-test-renderer';
+
 import App from '../../src/App';
 
 test('renders correctly', () => {
@@ -696,8 +699,6 @@ export const create = async (params: createParams): Promise<createResult> => {
   ejectExpoProject(ctx);
   injectShims(ctx);
   createScripts(ctx);
-  // TODO: generate some client side tests
-  createTests();
   preparePackage(ctx);
   shouldPrepareMetro(ctx);
   shouldPrepareBabel(ctx);
