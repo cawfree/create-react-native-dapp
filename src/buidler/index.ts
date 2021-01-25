@@ -269,7 +269,7 @@ const preparePackage = (ctx: createContext) =>
       // scripts
       'scripts.postinstall': 'npx ts-node scripts/postinstall',
       'scripts.hardhat': 'npx ts-node scripts/hardhat',
-      'scripts.test': 'npx hardhat test',
+      'scripts.test': 'npx hardhat test && jest',
       // husky
       'husky.hooks.pre-commit': 'lint-staged',
       // dependencies
@@ -300,11 +300,16 @@ const preparePackage = (ctx: createContext) =>
       'devDependencies.@nomiclabs/hardhat-waffle': '^2.0.1',
       'devDependencies.chai': '^4.2.0',
       'devDependencies.ethereum-waffle': '^3.2.1',
+      'devDependencies.jest': '26.6.3',
+      'devDependencies.react-test-renderer': '17.0.1',
       // react-native
       'react-native.stream': 'react-native-stream',
       'react-native.crypto': 'react-native-crypto',
       'react-native.path': 'path-browserify',
       'react-native.process': 'node-libs-browser/mock/process',
+      // jest
+      'jest.preset': 'react-native',
+      'jest.testMatch': ["**/__tests__/frontend/**/*.[jt]s?(x)"],
     },
     {
       'lint-staged': {
@@ -459,6 +464,7 @@ const shouldPrepareHardhatExample = (ctx: createContext) => {
   fs.writeFileSync(path.resolve(frontendTestDir, '.gitkeep'), '');
 
   const contractTest = path.resolve(contractsTestDir, 'Hello.test.js');
+  const frontendTest = path.resolve(frontendTestDir, 'App.test.tsx');
 
   fs.writeFileSync(
     contractTest,
@@ -477,6 +483,20 @@ describe("Hello", function() {
   });
 });
     `
+  );
+
+  fs.writeFileSync(
+    frontendTest,
+    `
+import React from 'react';
+import renderer from 'react-test-renderer';
+import App from '../../src/App';
+
+test('renders correctly', () => {
+  const tree = renderer.create(<App />).toJSON();
+  expect(tree).toMatchSnapshot();
+});
+    `.trim(),
   );
 
   const contract = path.resolve(contracts, 'Hello.sol');
@@ -603,6 +623,10 @@ ${fs.readFileSync(gitignore, 'utf-8')}
 # Environment Variables (Store safe defaults in .env.example!)
 .env
 
+# Jest
+.snap
+
+
 ${lines.join('\n\n')}
 
   `.trim()
@@ -624,7 +648,7 @@ export const getSuccessMessageSuffix = (ctx: createContext): string | null => {
 To recompile your contracts you can execute:
 ${chalk.white.bold`npx hardhat compile`}
 
-You can also test your contracts using:
+You can also test your app and contracts using:
 ${getScriptCommandString(ctx, 'test')}
   `;
 };
