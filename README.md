@@ -29,14 +29,14 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 
 ## To get started,
 
-First you'll need to create an account on [**Expo**](https://expo.io/signup) and install the [`expo-cli`](https://docs.expo.io/workflow/expo-cli/) and sign in with your credentials. This is because we rely upon `expo eject` when building your app, which currently [requires you to be signed in](https://forums.expo.io/t/newly-created-app-crashes-on-ios-sim/45566).
+First you'll need to create an account on [**Expo**](https://expo.io/signup) and install the [`expo-cli`](https://docs.expo.io/workflow/expo-cli/) and sign in with your credentials. This is because we rely upon `expo eject` when building your app, which currently [requires you to be signed in]().
 
 ```bash
 npm i -g expo-cli
 expo login
 ```
 
-Okay, we're ready to go!
+First, [please make sure](https://forums.expo.io/t/newly-created-app-crashes-on-ios-sim/45566) you've logged into [`expo-cli`](https://docs.expo.io/workflow/expo-cli/).
 
 ```
 npx create-react-native-dapp
@@ -58,7 +58,7 @@ yarn ios # android, web
 [`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) also exports a simple interface for the programmatic allocation of new projects.
 
 ```ts
-import { create, BlockchainTools } from 'create-react-native-dapp';
+import { create } from 'create-react-native-dapp';
 
 (async () => {
   const name = 'my-react-dapp';

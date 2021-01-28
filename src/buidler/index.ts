@@ -53,20 +53,67 @@ const ejectExpoProject = (ctx: createContext) => {
   } = ctx;
   const { projectDir } = ctx;
 
-  // TODO: Icon can go here.
-
   injectFlattenedJsonToFile(path.resolve(projectDir, 'app.json'), {
     'expo.ios.bundleIdentifier': bundleIdentifier,
     'expo.android.package': packageName,
     'expo.scheme': uriScheme,
+    'expo.icon': 'assets/image/app-icon.png',
   });
+
   return execSync(`cd ${projectDir}; expo eject --non-interactive;`, {
     stdio: 'inherit',
   });
 };
 
-// TODO: Configure the application icon in Expo.
-const setAppIcon = () => null;
+const setAppIcon = (ctx: createContext) => {
+  const { projectDir } = ctx;
+  const assetsDir = path.resolve(projectDir, 'assets');
+
+  !fs.existsSync(assetsDir) && fs.mkdirSync(assetsDir);
+
+  ['image', 'video', 'json', 'raw'].map((type: string) => {
+    const dir = path.resolve(assetsDir, type);
+    const gitkeep = path.resolve(dir, '.gitkeep');
+    !fs.existsSync(dir) && fs.mkdirSync(dir);
+    fs.writeFileSync(gitkeep, '');
+  });
+
+  const appIcon = path.resolve(assetsDir, 'image', 'app-icon.png');
+
+  fs.copyFileSync(require.resolve('../assets/app-icon.png'), appIcon);
+
+  const assetDeclarations = path.resolve(assetsDir, 'index.d.ts');
+  fs.writeFileSync(
+    assetDeclarations,
+    `
+declare module '*.png' {
+  const content: string
+  export default content
+}
+
+declare module '*.jpg' {
+  const content: string
+  export default content
+}
+
+declare module '*.jpeg' {
+  const content: string
+  export default content
+}
+
+declare module '*.gif' {
+  const content: string
+  export default content
+}
+
+declare module '*.mp4' {
+  const content: string
+  export default content
+}
+    `.trim(),
+  );
+
+};
 
 const createFileThunk = (root: string) => (f: readonly string[]): string => {
   return path.resolve(root, ...f);
@@ -98,7 +145,7 @@ const createBaseContext = async (
   const testsDir = path.resolve(projectDir, '__tests__');
   const projectFile = createFileThunk(projectDir);
   const scriptFile = createFileThunk(scriptsDir);
-  const srcDir = path.resolve(projectDir, 'src');
+  const srcDir = path.resolve(projectDir, 'frontend');
   return Object.freeze({
     ...params,
     yarn: fs.existsSync(projectFile(['yarn.lock'])),
@@ -149,7 +196,7 @@ global.atob = global.atob || require('base-64').decode;
 process.version = '${shimProcessVersion}';
 
 const { registerRootComponent } = require('expo');
-const { default: App } = require('./src/App');
+const { default: App } = require('./frontend/App');
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in the Expo client or in a native build,
@@ -271,6 +318,7 @@ const preparePackage = (ctx: createContext) =>
       'scripts.postinstall': 'npx ts-node scripts/postinstall',
       'scripts.hardhat': 'npx ts-node scripts/hardhat',
       'scripts.test': 'npx hardhat test && jest',
+      'scripts.android': 'adb -s emulator-5554 reverse tcp:8545 tcp:8545 && react-native run-android',
       // husky
       'husky.hooks.pre-commit': 'lint-staged',
       // dependencies
@@ -284,6 +332,8 @@ const preparePackage = (ctx: createContext) =>
       'dependencies.react-native-get-random-values': '1.5.0',
       'dependencies.react-native-dotenv': '2.4.3',
       // devDependencies
+      'devDependencies.enzyme': '3.11.0',
+      'devDependencies.enzyme-adapter-react-16': '1.15.6',
       'devDependencies.dotenv': '8.2.0',
       'devDependencies.prettier': '2.2.1',
       'devDependencies.husky': '4.3.8',
@@ -294,6 +344,8 @@ const preparePackage = (ctx: createContext) =>
       'devDependencies.eslint-plugin-eslint-comments': '^3.2.0',
       'devDependencies.eslint-plugin-functional': '^3.0.2',
       'devDependencies.eslint-plugin-import': '^2.22.0',
+      'devDependencies.eslint-plugin-react': '7.22.0',
+      'devDependencies.eslint-plugin-react-native': '3.10.0',
       'devDependencies.lint-staged': '10.5.3',
       'devDependencies.@types/node': '14.14.22',
       "devDependencies.@types/jest": '^26.0.20',
@@ -369,7 +421,7 @@ const shouldPrepareEslint = (ctx: createContext) =>
         'hardhat.config.js',
         '__tests__/contracts',
       ],
-      plugins: ['import', 'eslint-comments', 'functional'],
+      plugins: ['import', 'eslint-comments', 'functional', 'react', 'react-native'],
       extends: [
         'eslint:recommended',
         'plugin:eslint-comments/recommended',
@@ -399,6 +451,26 @@ const shouldPrepareEslint = (ctx: createContext) =>
           'error',
           { ignoreDeclarationSort: true, ignoreCase: true },
         ],
+        'sort-keys': [
+          'error',
+          'asc',
+          {
+            'caseSensitive': true,
+            'natural': false,
+            'minKeys': 2,
+          },
+        ],
+        'react-native/no-unused-styles': 2,
+        'react-native/split-platform-components': 2,
+        'react-native/no-inline-styles': 2,
+        'react-native/no-color-literals': 2,
+        'react-native/no-raw-text': 2,
+        'react-native/no-single-element-style-arrays': 2,
+      },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
       },
     })
   );
@@ -440,7 +512,7 @@ contract Hello {
 }
 `.trim();
 
-const shouldPrepareHardhatExample = (ctx: createContext) => {
+const shouldPrepareExample = (ctx: createContext) => {
   const {
     projectDir,
     testsDir,
@@ -490,14 +562,18 @@ describe("Hello", function() {
   fs.writeFileSync(
     frontendTest,
     `
+import Enzyme from 'enzyme';
+import Adapter from 'enzyme-adapter-react-16';
 import React from 'react';
-import renderer from 'react-test-renderer';
+ 
+import App from '../../frontend/App';
 
-import App from '../../src/App';
+Enzyme.configure({ adapter: new Adapter() });
 
 test('renders correctly', () => {
-  const tree = renderer.create(<App />).toJSON();
-  expect(tree).toMatchSnapshot();
+  const wrapper = Enzyme.shallow(<App />);
+
+  expect(wrapper.find({ testID: 'tid-message'}).contains('Loading...')).toBe(true);
 });
     `.trim(),
   );
@@ -556,7 +632,7 @@ const shouldDeployContract = async (web3, abi, data, from: string) => {
 };
 
 export default function App(): JSX.Element {
-  const [message, setMessage] = React.useState<string>('');
+  const [message, setMessage] = React.useState<string>('Loading...');
   const web3 = React.useMemo(
     () => new Web3(new Web3.providers.HttpProvider(HARDHAT_URL)),
     [HARDHAT_URL]
@@ -575,7 +651,7 @@ export default function App(): JSX.Element {
   }, [web3, shouldDeployContract, setMessage, HARDHAT_PRIVATE_KEY]);
   return (
     <View style={[StyleSheet.absoluteFill, styles.center]}>
-      <Text>{message}</Text>
+      <Text testID="tid-message">{message}</Text>
     </View>
   );
 }
@@ -601,10 +677,7 @@ If this project has helped you, please consider making a small contribution towa
 
   `.trim());
 
-};
-
-const shouldPrepareExample = (ctx: createContext) => {
-  return shouldPrepareHardhatExample(ctx);
+  execSync(`cd ${projectDir} && npx hardhat compile`, { stdio: 'inherit' });
 };
 
 const getHardhatGitIgnore = (): string | null => {
@@ -695,7 +768,7 @@ export const create = async (params: createParams): Promise<createResult> => {
     });
   }
 
-  setAppIcon();
+  setAppIcon(ctx);
   ejectExpoProject(ctx);
   injectShims(ctx);
   createScripts(ctx);
