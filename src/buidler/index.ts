@@ -318,7 +318,7 @@ const preparePackage = (ctx: createContext) =>
       'scripts.postinstall': 'npx ts-node scripts/postinstall',
       'scripts.hardhat': 'npx ts-node scripts/hardhat',
       'scripts.test': 'npx hardhat test && jest',
-      'scripts.android': 'adb -s emulator-5554 reverse tcp:8545 tcp:8545 && react-native run-android',
+      'scripts.android': 'adb reverse tcp:8545 tcp:8545 && react-native run-android',
       // husky
       'husky.hooks.pre-commit': 'lint-staged',
       // dependencies
