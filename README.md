@@ -29,20 +29,13 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 
 ## To get started,
 
-First you'll need to create an account on [**Expo**](https://expo.io/signup) and install the [`expo-cli`](https://docs.expo.io/workflow/expo-cli/) and sign in with your credentials. This is because we rely upon `expo eject` when building your app, which currently [requires you to be signed in]().
-
-```bash
-npm i -g expo-cli
-expo login
-```
-
 First, [please make sure](https://forums.expo.io/t/newly-created-app-crashes-on-ios-sim/45566) you've logged into [`expo-cli`](https://docs.expo.io/workflow/expo-cli/).
 
 ```
 npx create-react-native-dapp
 ```
 
-This will walk you through the creation of your Ethereum-enabled application, which works on [**Android**](https://reactnative.dev), [**iOS**](https://reactnative.dev) and the [**Web**](https://github.com/necolas/react-native-web). The resulting project has been `eject`ed from [**Expo**](https://expo.io) and merged with your selected blockchain development tools.
+This will walk you through the creation of your Ethereum-enabled application, which works on [**Android**](https://reactnative.dev), [**iOS**](https://reactnative.dev) and the [**Web**](https://github.com/necolas/react-native-web).
 
 To start the app, you can:
 
