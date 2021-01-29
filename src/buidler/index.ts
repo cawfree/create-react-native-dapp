@@ -16,6 +16,8 @@ import {
   HardhatOptions,
 } from '../types';
 
+const port = 8545;
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 const prettyStringify = (obj: object): string => JSON.stringify(obj, null, 2);
 
@@ -60,9 +62,20 @@ const ejectExpoProject = (ctx: createContext) => {
     'expo.icon': 'assets/image/app-icon.png',
   });
 
-  return execSync(`cd ${projectDir}; expo eject --non-interactive;`, {
+  execSync(`cd ${projectDir}; expo eject --non-interactive;`, {
     stdio: 'inherit',
   });
+
+  const gradle = path.resolve(projectDir, 'android', 'gradle.properties');
+  fs.writeFileSync(
+    gradle,
+    `
+${fs.readFileSync(gradle, 'utf-8')}
+
+# 4GB Heap Size
+org.gradle.jvmargs=-Xmx4608m
+    `.trim(),
+  );
 };
 
 const setAppIcon = (ctx: createContext) => {
@@ -207,27 +220,13 @@ registerRootComponent(App);
   );
 };
 
-const createHardhatScripts = (ctx: createContext) => {
-  const {
-    hardhat: { hardhat },
-  } = ctx;
-
-  fs.writeFileSync(
-    hardhat,
-    `
-import 'dotenv/config';
-import * as child_process from 'child_process';
-
-child_process.execSync('npx hardhat compile', { stdio: 'inherit' });
-child_process.execSync('npx hardhat node', { stdio: 'inherit' });
-    `.trim()
-  );
-};
-
 const createScripts = (ctx: createContext) => {
   const { scriptsDir } = ctx;
   !fs.existsSync(scriptsDir) && fs.mkdirSync(scriptsDir);
   const postinstall = path.resolve(scriptsDir, 'postinstall.ts');
+  const android = path.resolve(scriptsDir, 'android.ts');
+  const ios = path.resolve(scriptsDir, 'ios.ts');
+  const web = path.resolve(scriptsDir, 'web.ts');
   fs.writeFileSync(
     postinstall,
     `
@@ -237,13 +236,71 @@ import * as child_process from 'child_process';
 child_process.execSync('npx pod-install', { stdio: 'inherit' });
     `.trim()
   );
-  createHardhatScripts(ctx);
+
+  fs.writeFileSync(
+    android,
+    `
+import 'dotenv/config';
+import * as child_process from 'child_process';
+
+import * as appRootPath from 'app-root-path';
+import * as chokidar from 'chokidar';
+
+const opts: child_process.ExecSyncOptions = { cwd: \`\${appRootPath}\`, stdio: 'inherit' };
+
+chokidar.watch('contracts').on('all', () => {
+  child_process.execSync('npx hardhat compile', opts);
+});
+
+child_process.execSync('npx kill-port ${port}', opts);
+child_process.execSync('adb reverse tcp:${port} tcp:${port}', opts);
+child_process.execSync('npx hardhat node & react-native run-android &', opts);
+    `.trim(),
+  );
+  fs.writeFileSync(
+    ios,
+    `
+import 'dotenv/config';
+import * as child_process from 'child_process';
+
+import * as appRootPath from 'app-root-path';
+import * as chokidar from 'chokidar';
+
+const opts: child_process.ExecSyncOptions = { cwd: \`\${appRootPath}\`, stdio: 'inherit' };
+
+chokidar.watch('contracts').on('all', () => {
+  child_process.execSync('npx hardhat compile', opts);
+});
+
+child_process.execSync('npx kill-port ${port}', opts);
+child_process.execSync('npx hardhat node & react-native run-ios &', opts);
+    `.trim(),
+  );
+  fs.writeFileSync(
+    web,
+    `
+import 'dotenv/config';
+import * as child_process from 'child_process';
+
+import * as appRootPath from 'app-root-path';
+import * as chokidar from 'chokidar';
+
+const opts: child_process.ExecSyncOptions = { cwd: \`\${appRootPath}\`, stdio: 'inherit' };
+
+chokidar.watch('contracts').on('all', () => {
+  child_process.execSync('npx hardhat compile', opts);
+});
+
+child_process.execSync('npx kill-port 8545', opts);
+child_process.execSync('expo web & npx hardhat node &', opts);
+    `.trim(),
+  );
 };
 
 const getAllEnvVariables = (ctx: createContext): EnvVariables => {
   const { hardhat: { hardhatAccounts } } = ctx;
   return [
-    ['HARDHAT_URL', 'string', 'http://localhost:8545'],
+    ['HARDHAT_URL', 'string', `http://localhost:${port}`],
     ['HARDHAT_PRIVATE_KEY', 'string', hardhatAccounts[0].privateKey],
   ];
 };
@@ -315,28 +372,31 @@ const preparePackage = (ctx: createContext) =>
         'react-native-web',
       ],
       // scripts
-      'scripts.postinstall': 'npx ts-node scripts/postinstall',
-      'scripts.hardhat': 'npx ts-node scripts/hardhat',
+      'scripts.postinstall': 'node_modules/.bin/ts-node scripts/postinstall',
       'scripts.test': 'npx hardhat test && jest',
-      'scripts.android': 'adb reverse tcp:8545 tcp:8545 && react-native run-android',
+      'scripts.android': 'node_modules/.bin/ts-node scripts/android',
+      'scripts.ios': 'node_modules/.bin/ts-node scripts/ios',
+      'scripts.web': 'node_modules/.bin/ts-node scripts/web',
       // husky
       'husky.hooks.pre-commit': 'lint-staged',
       // dependencies
       'dependencies.base-64': '1.0.0',
       'dependencies.buffer': '6.0.3',
-      'dependencies.web3': '1.3.1',
       'dependencies.node-libs-browser': '2.2.1',
       'dependencies.path-browserify': '0.0.0',
-      'dependencies.react-native-stream': '0.1.9',
       'dependencies.react-native-crypto': '2.2.0',
-      'dependencies.react-native-get-random-values': '1.5.0',
       'dependencies.react-native-dotenv': '2.4.3',
+      'dependencies.react-native-get-random-values': '1.5.0',
+      'dependencies.react-native-stream': '0.1.9',
+      'dependencies.web3': '1.3.1',
       // devDependencies
+      'devDependencies.app-root-path': '3.0.0',
+      'devDependencies.chokidar': '3.5.1',
+      'devDependencies.dotenv': '8.2.0',
       'devDependencies.enzyme': '3.11.0',
       'devDependencies.enzyme-adapter-react-16': '1.15.6',
-      'devDependencies.dotenv': '8.2.0',
-      'devDependencies.prettier': '2.2.1',
       'devDependencies.husky': '4.3.8',
+      'devDependencies.prettier': '2.2.1',
       'devDependencies.@typescript-eslint/eslint-plugin': '^4.0.1',
       'devDependencies.@typescript-eslint/parser': '^4.0.1',
       'devDependencies.eslint': '^7.8.0',
@@ -356,6 +416,7 @@ const preparePackage = (ctx: createContext) =>
       'devDependencies.ethereum-waffle': '^3.2.1',
       'devDependencies.jest': '26.6.3',
       'devDependencies.react-test-renderer': '17.0.1',
+      'devDependencies.ts-node': '9.1.1',
       // react-native
       'react-native.stream': 'react-native-stream',
       'react-native.crypto': 'react-native-crypto',
@@ -432,6 +493,7 @@ const shouldPrepareEslint = (ctx: createContext) =>
         'prettier/@typescript-eslint',
       ],
       globals: {
+        // TODO: Enable support in RN for BigInteger.
         //BigInt: true,
         console: true,
         __DEV__: true,
@@ -501,12 +563,15 @@ const getExampleContract = () =>
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
 
+import "hardhat/console.sol";
+
 contract Hello {
   string defaultSuffix;
   constructor() {
     defaultSuffix = '!';
   }
   function sayHello(string memory name) public view returns(string memory) {
+    console.log("Saying hello to %s!", msg.sender);
     return string(abi.encodePacked("Welcome to ", name, defaultSuffix));
   }
 }
@@ -588,10 +653,14 @@ test('renders correctly', () => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 require("@nomiclabs/hardhat-waffle");
+require("dotenv/config");
+
+const { HARDHAT_URL } = process.env;
 
 module.exports = {
   solidity: "0.7.3",
   networks: {
+    localhost: { url: HARDHAT_URL },
     hardhat: {
       accounts: ${JSON.stringify(hardhatAccounts)}
     },
@@ -668,8 +737,8 @@ Thank you so much for using [\`create-react-native-dapp\`](https://github.com/ca
 
 ## 🔗 Links
   - Raise issues on our [**Issues Page**](https://github.com/cawfree/create-react-native-dapp/issues).
-  - Make feature requests via [**Discord**](https://discord.com/invite/PeqrwpCDwc).
-  - Find out the latest on my [**Twitter**](https://twitter.com/cawfree).
+  - You can also feature requests via our [**Discord**](https://discord.com/invite/PeqrwpCDwc).
+  - Follow the latest on my [**Twitter**](https://twitter.com/cawfree).
 
 ## 🙏 Donations
 If this project has helped you, please consider making a small contribution towards maintenance of this library:
@@ -702,6 +771,8 @@ ${fs.readFileSync(gitignore, 'utf-8')}
 # Jest
 .snap
 
+# Package Managers
+${ctx.yarn ? 'package-lock.json' : 'yarn.lock'}
 
 ${lines.join('\n\n')}
 
@@ -712,45 +783,14 @@ ${lines.join('\n\n')}
 const getScriptCommandString = (ctx: createContext, str: string) =>
   chalk.white.bold`${ctx.yarn ? 'yarn' : 'npm run-script'} ${str}`;
 
-export const getSuccessMessagePrefix = (ctx: createContext): string | null => {
-  return `
-Before starting, you must initialize the simulated blockchain by executing:
-- ${getScriptCommandString(ctx, 'hardhat')}
-  `.trim();
-};
-
-export const getSuccessMessageSuffix = (ctx: createContext): string | null => {
-  return `
-To recompile your contracts you can execute:
-${chalk.white.bold`npx hardhat compile`}
-
-You can also test your app and contracts using:
-${getScriptCommandString(ctx, 'test')}
-  `;
-};
-
 export const getSuccessMessage = (ctx: createContext): string => {
-  const pfx = getSuccessMessagePrefix(ctx);
-  const sfx = getSuccessMessageSuffix(ctx);
   return `
 ${chalk.green`✔`} Successfully integrated Web3 into React Native!
-${
-  pfx
-    ? ` 
-${pfx}`
-    : ''
-}
 
 To compile and run your project in development, execute one of the following commands:
 - ${getScriptCommandString(ctx, `ios`)}
 - ${getScriptCommandString(ctx, `android`)}
 - ${getScriptCommandString(ctx, `web`)}
-${
-  sfx
-    ? `
-${sfx}`
-    : ''
-}
 
   `.trim();
 };

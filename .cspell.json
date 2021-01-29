@@ -21,6 +21,7 @@
         "exponentiate",
         "gitkeep",
         "globby",
+        "jvmargs",
         "libauth",
         "mkdir",
         "nodeify",
