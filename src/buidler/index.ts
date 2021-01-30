@@ -361,10 +361,16 @@ const preparePackage = (ctx: createContext) =>
     path.resolve(ctx.projectDir, 'package.json'),
     {
       license: 'MIT',
-      author: 'Alex Thomas (@cawfree) <hello@cawfree.com>',
+      contributors: [
+        {
+          name: '@cawfree',
+          url: "https://github.com/cawfree"
+        },
+      ],
       keywords: [
         'react',
         'react-native',
+        'blockchain',
         'dapp',
         'ethereum',
         'web3',
@@ -377,8 +383,6 @@ const preparePackage = (ctx: createContext) =>
       'scripts.android': 'node_modules/.bin/ts-node scripts/android',
       'scripts.ios': 'node_modules/.bin/ts-node scripts/ios',
       'scripts.web': 'node_modules/.bin/ts-node scripts/web',
-      // husky
-      'husky.hooks.pre-commit': 'lint-staged',
       // dependencies
       'dependencies.base-64': '1.0.0',
       'dependencies.buffer': '6.0.3',
@@ -392,6 +396,8 @@ const preparePackage = (ctx: createContext) =>
       // devDependencies
       'devDependencies.app-root-path': '3.0.0',
       'devDependencies.chokidar': '3.5.1',
+      'devDependencies.commitizen': '4.2.3',
+      'devDependencies.cz-conventional-changelog': '^3.2.0',
       'devDependencies.dotenv': '8.2.0',
       'devDependencies.enzyme': '3.11.0',
       'devDependencies.enzyme-adapter-react-16': '1.15.6',
@@ -427,6 +433,18 @@ const preparePackage = (ctx: createContext) =>
       'jest.testMatch': ["**/__tests__/frontend/**/*.[jt]s?(x)"],
     },
     {
+      config: {
+        commitizen: {
+          path: './node_modules/cz-conventional-changelog'
+        }
+      },
+      husky: {
+        hooks: {
+          'prepare-commit-msg': 'exec < /dev/tty && git cz --hook',
+          'pre-commit': 'lint-staged',
+          'pre-push': 'test'
+        }
+      },
       'lint-staged': {
         '*.{ts,tsx,js,jsx}': "eslint --ext '.ts,.tsx,.js,.jsx' -c .eslintrc.json",
       },
@@ -729,22 +747,6 @@ export default function App(): JSX.Element {
 
   const orig = path.resolve(projectDir, 'App.tsx');
   fs.existsSync(orig) && fs.unlinkSync(orig);
-
-  fs.writeFileSync(path.resolve(projectDir, 'README.md'), `
-
-# 👋 Welcome!
-Thank you so much for using [\`create-react-native-dapp\`](https://github.com/cawfree/create-react-native-dapp)! We wish you the best of luck on your decentralized adventure 🦄.
-
-## 🔗 Links
-  - Raise issues on our [**Issues Page**](https://github.com/cawfree/create-react-native-dapp/issues).
-  - You can also feature requests via our [**Discord**](https://discord.com/invite/PeqrwpCDwc).
-  - Follow the latest on my [**Twitter**](https://twitter.com/cawfree).
-
-## 🙏 Donations
-If this project has helped you, please consider making a small contribution towards maintenance of this library:
-[**cawfree.eth**](https://etherscan.io/address/0x312e71162df834a87a2684d30562b94816b0f072).
-
-  `.trim());
 
   execSync(`cd ${projectDir} && npx hardhat compile`, { stdio: 'inherit' });
 };

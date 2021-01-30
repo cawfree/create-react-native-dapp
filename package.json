@@ -9,6 +9,12 @@
   "repository": "https://github.com/cawfree/create-react-native-dapp",
   "license": "MIT",
   "author": "Alex Thomas (@cawfree) <hello@cawfree.com>",
+  "contributors": [
+    {
+      "name": "@cawfree",
+      "url": "https://github.com/cawfree"
+    }
+  ],
   "keywords": [
     "react",
     "react-native",
@@ -16,7 +22,8 @@
     "ethereum",
     "web3",
     "starter",
-    "react-native-web"
+    "react-native-web",
+    "blockchain"
   ],
   "scripts": {
     "build": "run-p build:* && cp -rf src/assets build/main/ && sudo chmod +x build/main/cli/index.js",
