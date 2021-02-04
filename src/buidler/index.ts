@@ -60,6 +60,9 @@ const ejectExpoProject = (ctx: createContext) => {
     'expo.android.package': packageName,
     'expo.scheme': uriScheme,
     'expo.icon': 'assets/image/app-icon.png',
+    'expo.splash.image': 'assets/image/app-icon.png',
+    'expo.splash.resizeMode': 'contain',
+    'expo.splash.backgroundColor': '#222222',
   });
 
   execSync(`cd ${projectDir}; expo eject --non-interactive;`, {
@@ -384,6 +387,9 @@ const preparePackage = (ctx: createContext) =>
       'scripts.ios': 'node_modules/.bin/ts-node scripts/ios',
       'scripts.web': 'node_modules/.bin/ts-node scripts/web',
       // dependencies
+      'dependencies.@react-native-async-storage/async-storage': '1.13.4',
+      'dependencies.@walletconnect/react-native-dapp': '1.3.5-rc.1',
+      'dependencies.react-native-svg': '12.1.0',
       'dependencies.base-64': '1.0.0',
       'dependencies.buffer': '6.0.3',
       'dependencies.node-libs-browser': '2.2.1',
@@ -699,10 +705,13 @@ module.exports = {
     path.resolve(srcDir, 'App.tsx'),
     `
 import { HARDHAT_PRIVATE_KEY, HARDHAT_URL } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useWalletConnect, withWalletConnect } from '@walletconnect/react-native-dapp';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Button, Platform, StyleSheet, Text, View } from 'react-native';
 import Web3 from 'web3';
 
+import { expo } from '../app.json';
 import Hello from '../artifacts/contracts/Hello.sol/Hello.json';
 
 const styles = StyleSheet.create({
@@ -718,7 +727,8 @@ const shouldDeployContract = async (web3, abi, data, from: string) => {
   return new web3.eth.Contract(abi, contractAddress);
 };
 
-export default function App(): JSX.Element {
+function App(): JSX.Element {
+  const connector = useWalletConnect();
   const [message, setMessage] = React.useState<string>('Loading...');
   const web3 = React.useMemo(
     () => new Web3(new Web3.providers.HttpProvider(HARDHAT_URL)),
@@ -736,12 +746,27 @@ export default function App(): JSX.Element {
       setMessage(await contract.methods.sayHello('React Native').call());
     })();
   }, [web3, shouldDeployContract, setMessage, HARDHAT_PRIVATE_KEY]);
+  const connectWallet = React.useCallback(() => {
+    return connector.connect();
+  }, [connector]);
   return (
     <View style={[StyleSheet.absoluteFill, styles.center]}>
       <Text testID="tid-message">{message}</Text>
+      <Button onPress={connectWallet} title="Connect Wallet" />
     </View>
   );
 }
+
+const { scheme } = expo;
+
+export default withWalletConnect(App, {
+  redirectUrl: Platform.OS === 'web' ? window.location.origin : \`\${scheme}://\`,
+  storageOptions: {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    asyncStorage: AsyncStorage,
+  },
+});
     `.trim()
   );
 

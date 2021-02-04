@@ -38,7 +38,8 @@
         "unflatten",
         "Unflattened",
         "unimodules",
-        "untracked"
+        "untracked",
+        "walletconnect"
     ],
     "flagWords": [],
     "ignorePaths": [
