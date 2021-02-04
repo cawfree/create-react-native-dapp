@@ -20,7 +20,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
   - Supports Android, iOS and the Web.
 - 👷 **Served with Hardhat.**
   - Your generated app comes with a simple example contract which you can deploy, test and interact with directly.
-- 👛 **Powered by WalletConnect**
+- 👛 **Powered by WalletConnect**.
   - Connect to awesome Wallets such as [**Rainbow**](https://github.com/rainbow/rainbow-me) out of the box!
 - 🏗️ **It's typed, and pretty.**
   - It comes pre-configured with TypeScript to help write applications that _scale_.
