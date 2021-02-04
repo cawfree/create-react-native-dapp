@@ -21,7 +21,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 - 👷 **Served with Hardhat.**
   - Your generated app comes with a simple example contract which you can deploy, test and interact with directly.
 - 👛 **Powered by WalletConnect**.
-  - Connect to awesome Wallets such as [**Rainbow** 🌈](https://github.com/rainbow-me/rainbow) out of the box!
+  - Connect to beautiful wallets such as [**Rainbow** 🌈](https://github.com/rainbow-me/rainbow) out of the box!
 - 🏗️ **It's typed, and pretty.**
   - It comes pre-configured with TypeScript to help write applications that _scale_.
   - It's integrated with [**prettier**](https://prettier.io/) and [**husky**](https://github.com/typicode/husky) to ensure coding standards are enforced right from the beginning.
