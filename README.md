@@ -46,8 +46,6 @@ cd my-react-dapp
 yarn ios # android, web
 ```
 
-> ⚠️ **Note:** You'll need to execute `yarn hardhat` to simulate the local blockchain prior to running your app.
-
 ## To programmatically invoke,
 
 [`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) also exports a simple interface for the programmatic allocation of new projects.
