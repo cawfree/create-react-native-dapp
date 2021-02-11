@@ -716,6 +716,7 @@ import Hello from '../artifacts/contracts/Hello.sol/Hello.json';
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
+  white: { backgroundColor: 'white' },
 });
 
 const shouldDeployContract = async (web3, abi, data, from: string) => {
@@ -750,7 +751,7 @@ function App(): JSX.Element {
     return connector.connect();
   }, [connector]);
   return (
-    <View style={[StyleSheet.absoluteFill, styles.center]}>
+    <View style={[StyleSheet.absoluteFill, styles.center, styles.white]}>
       <Text testID="tid-message">{message}</Text>
       <Button onPress={connectWallet} title="Connect Wallet" />
     </View>
