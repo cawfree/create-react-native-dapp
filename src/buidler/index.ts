@@ -708,7 +708,7 @@ import { HARDHAT_PRIVATE_KEY, HARDHAT_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWalletConnect, withWalletConnect } from '@walletconnect/react-native-dapp';
 import React from 'react';
-import { Button, Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Web3 from 'web3';
 
 import { expo } from '../app.json';
@@ -716,6 +716,7 @@ import Hello from '../artifacts/contracts/Hello.sol/Hello.json';
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
+  // eslint-disable-next-line react-native/no-color-literals
   white: { backgroundColor: 'white' },
 });
 
@@ -750,10 +751,42 @@ function App(): JSX.Element {
   const connectWallet = React.useCallback(() => {
     return connector.connect();
   }, [connector]);
+  const signTransaction = React.useCallback(async () => {
+    try {
+       await connector.signTransaction({
+        data: '0x',
+        from: '0xbc28Ea04101F03aA7a94C1379bc3AB32E65e62d3',
+        gas: '0x9c40',
+        gasPrice: '0x02540be400',
+        nonce: '0x0114',
+        to: '0x89D24A7b4cCB1b6fAA2625Fe562bDd9A23260359',
+        value: '0x00',
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }, [connector]);
+  const killSession = React.useCallback(() => {
+    return connector.killSession();
+  }, [connector]);
   return (
     <View style={[StyleSheet.absoluteFill, styles.center, styles.white]}>
       <Text testID="tid-message">{message}</Text>
-      <Button onPress={connectWallet} title="Connect Wallet" />
+      {!connector.connected && (
+        <TouchableOpacity onPress={connectWallet}>
+          <Text>Connect a Wallet</Text>
+        </TouchableOpacity>
+      )}
+      {!!connector.connected && (
+        <>
+          <TouchableOpacity onPress={signTransaction}>
+            <Text>Sign a Transaction</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={killSession}>
+            <Text>Kill Session</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
