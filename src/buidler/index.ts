@@ -257,7 +257,7 @@ chokidar.watch('contracts').on('all', () => {
 
 child_process.execSync('npx kill-port ${port}', opts);
 child_process.execSync('adb reverse tcp:${port} tcp:${port}', opts);
-child_process.execSync('npx hardhat node & react-native run-android &', opts);
+child_process.execSync('npx hardhat node --hostname 0.0.0.0 & react-native run-android &', opts);
     `.trim(),
   );
   fs.writeFileSync(
@@ -276,7 +276,7 @@ chokidar.watch('contracts').on('all', () => {
 });
 
 child_process.execSync('npx kill-port ${port}', opts);
-child_process.execSync('npx hardhat node & react-native run-ios &', opts);
+child_process.execSync('npx hardhat node --hostname 0.0.0.0 & react-native run-ios &', opts);
     `.trim(),
   );
   fs.writeFileSync(
@@ -295,7 +295,7 @@ chokidar.watch('contracts').on('all', () => {
 });
 
 child_process.execSync('npx kill-port 8545', opts);
-child_process.execSync('expo web & npx hardhat node &', opts);
+child_process.execSync('expo web & npx hardhat node --hostname 0.0.0.0 &', opts);
     `.trim(),
   );
 };
@@ -303,7 +303,7 @@ child_process.execSync('expo web & npx hardhat node &', opts);
 const getAllEnvVariables = (ctx: createContext): EnvVariables => {
   const { hardhat: { hardhatAccounts } } = ctx;
   return [
-    ['HARDHAT_URL', 'string', `http://localhost:${port}`],
+    ['HARDHAT_PORT', 'string', `${port}`],
     ['HARDHAT_PRIVATE_KEY', 'string', hardhatAccounts[0].privateKey],
   ];
 };
@@ -396,6 +396,7 @@ const preparePackage = (ctx: createContext) =>
       'dependencies.path-browserify': '0.0.0',
       'dependencies.react-native-crypto': '2.2.0',
       'dependencies.react-native-dotenv': '2.4.3',
+      'dependencies.react-native-localhost': '1.0.0',
       'dependencies.react-native-get-random-values': '1.5.0',
       'dependencies.react-native-stream': '0.1.9',
       'dependencies.web3': '1.3.1',
@@ -679,12 +680,12 @@ test('renders correctly', () => {
 require("@nomiclabs/hardhat-waffle");
 require("dotenv/config");
 
-const { HARDHAT_URL } = process.env;
+const { HARDHAT_PORT } = process.env;
 
 module.exports = {
   solidity: "0.7.3",
   networks: {
-    localhost: { url: HARDHAT_URL },
+    localhost: { url: \`http://127.0.0.1:\${HARDHAT_PORT}\` },
     hardhat: {
       accounts: ${JSON.stringify(hardhatAccounts)}
     },
@@ -704,11 +705,12 @@ module.exports = {
   fs.writeFileSync(
     path.resolve(srcDir, 'App.tsx'),
     `
-import { HARDHAT_PRIVATE_KEY, HARDHAT_URL } from '@env';
+import { HARDHAT_PORT, HARDHAT_PRIVATE_KEY } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWalletConnect, withWalletConnect } from '@walletconnect/react-native-dapp';
 import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import localhost from 'react-native-localhost';
 import Web3 from 'web3';
 
 import { expo } from '../app.json';
@@ -733,8 +735,8 @@ function App(): JSX.Element {
   const connector = useWalletConnect();
   const [message, setMessage] = React.useState<string>('Loading...');
   const web3 = React.useMemo(
-    () => new Web3(new Web3.providers.HttpProvider(HARDHAT_URL)),
-    [HARDHAT_URL]
+    () => new Web3(new Web3.providers.HttpProvider(\`http://\${localhost}:\${HARDHAT_PORT}\`)),
+    [HARDHAT_PORT]
   );
   React.useEffect(() => {
     (async () => {
