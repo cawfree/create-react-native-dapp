@@ -102,29 +102,26 @@ const setAppIcon = (ctx: createContext) => {
   fs.writeFileSync(
     assetDeclarations,
     `
+import { ImageSourcePropType } from 'react-native';
+
 declare module '*.png' {
-  const content: string
-  export default content
+  export default ImageSourcePropType;
 }
 
 declare module '*.jpg' {
-  const content: string
-  export default content
+  export default ImageSourcePropType;
 }
 
 declare module '*.jpeg' {
-  const content: string
-  export default content
+  export default ImageSourcePropType;
 }
 
 declare module '*.gif' {
-  const content: string
-  export default content
+  export default ImageSourcePropType;
 }
 
 declare module '*.mp4' {
-  const content: string
-  export default content
+  export default unknown;
 }
     `.trim(),
   );
