@@ -385,7 +385,7 @@ const preparePackage = (ctx: createContext) =>
       'scripts.web': 'node_modules/.bin/ts-node scripts/web',
       // dependencies
       'dependencies.@react-native-async-storage/async-storage': '1.13.4',
-      'dependencies.@walletconnect/react-native-dapp': '1.3.5-rc.1',
+      'dependencies.@walletconnect/react-native-dapp': '1.3.6',
       'dependencies.react-native-svg': '12.1.0',
       'dependencies.base-64': '1.0.0',
       'dependencies.buffer': '6.0.3',
