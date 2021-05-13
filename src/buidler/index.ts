@@ -65,7 +65,7 @@ const ejectExpoProject = (ctx: createContext) => {
     'expo.splash.backgroundColor': '#222222',
   });
 
-  execSync(`cd ${projectDir}; expo eject --non-interactive;`, {
+  execSync(`cd ${projectDir}; expo eject --non-interactive`, {
     stdio: 'inherit',
   });
 
