@@ -65,8 +65,9 @@ const ejectExpoProject = (ctx: createContext) => {
     'expo.splash.backgroundColor': '#222222',
   });
 
-  execSync(`cd ${projectDir}; expo eject --non-interactive`, {
+  execSync(`expo eject --non-interactive`, {
     stdio: 'inherit',
+    cwd: `${projectDir}`,
   });
 
   const gradle = path.resolve(projectDir, 'android', 'gradle.properties');
@@ -572,11 +573,10 @@ const shouldWriteEnv = (ctx: createContext) => {
 
 const shouldInstall = (ctx: createContext) =>
   execSync(
-    `cd ${ctx.projectDir}; ${
-      ctx.yarn ? 'yarn' : 'npm i'
-    }; `.trim(),
+    `${ctx.yarn ? 'yarn' : 'npm i'}`,
     {
       stdio: 'inherit',
+      cwd: `${ctx.projectDir}`,
     }
   );
 
@@ -806,7 +806,7 @@ export default withWalletConnect(App, {
   const orig = path.resolve(projectDir, 'App.tsx');
   fs.existsSync(orig) && fs.unlinkSync(orig);
 
-  execSync(`cd ${projectDir} && npx hardhat compile`, { stdio: 'inherit' });
+  execSync(`npx hardhat compile`, { cwd: `${projectDir}`, stdio: 'inherit' });
 };
 
 const getHardhatGitIgnore = (): string | null => {
