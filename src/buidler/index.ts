@@ -233,8 +233,11 @@ const createScripts = (ctx: createContext) => {
     `
 import 'dotenv/config';
 import * as child_process from 'child_process';
+import {macos} from 'platform-detect';
 
-child_process.execSync('npx pod-install', { stdio: 'inherit' });
+if (macos) {
+  child_process.execSync('npx pod-install', { stdio: 'inherit' });
+}
     `.trim()
   );
 
@@ -408,6 +411,7 @@ const preparePackage = (ctx: createContext) =>
       'devDependencies.enzyme-adapter-react-16': '1.15.6',
       'devDependencies.husky': '4.3.8',
       'devDependencies.prettier': '2.2.1',
+      'devDependencies.platform-detect': '3.0.1',
       'devDependencies.@typescript-eslint/eslint-plugin': '^4.0.1',
       'devDependencies.@typescript-eslint/parser': '^4.0.1',
       'devDependencies.eslint': '^7.8.0',
