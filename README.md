@@ -1,4 +1,4 @@
-# create-react-native-dapp
+# `npx create-react-native-dapp`
 
 <p align="center">
   <img src="public/logo.png" width="100" />
