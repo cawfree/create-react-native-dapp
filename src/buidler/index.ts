@@ -458,7 +458,7 @@ const preparePackage = (ctx: createContext) =>
         }
       },
       'lint-staged': {
-        '*.{ts,tsx,js,jsx}': "eslint --ext '.ts,.tsx,.js,.jsx' -c .eslintrc.json",
+        '*.{ts,tsx,js,jsx}': "eslint --fix --ext '.ts,.tsx,.js,.jsx' -c .eslintrc.json",
       },
     }
   );
