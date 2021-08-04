@@ -28,6 +28,7 @@
         "nodeify",
         "nomiclabs",
         "precommit",
+        "predeploy",
         "prettierignore",
         "randombytes",
         "sandboxed",

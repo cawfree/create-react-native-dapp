@@ -364,6 +364,7 @@ const preparePackage = (ctx: createContext) =>
   injectFlattenedJsonToFile(
     path.resolve(ctx.projectDir, 'package.json'),
     {
+      homepage: 'https://cawfree.github.io/create-react-native-dapp',
       license: 'MIT',
       contributors: [
         {
@@ -387,6 +388,7 @@ const preparePackage = (ctx: createContext) =>
       'scripts.android': 'node_modules/.bin/ts-node scripts/android',
       'scripts.ios': 'node_modules/.bin/ts-node scripts/ios',
       'scripts.web': 'node_modules/.bin/ts-node scripts/web',
+      'scripts.web:deploy': 'expo build:web && gh-pages -d web-build',
       // dependencies
       'dependencies.@react-native-async-storage/async-storage': '1.13.4',
       'dependencies.@walletconnect/react-native-dapp': '1.5.2',
@@ -429,6 +431,7 @@ const preparePackage = (ctx: createContext) =>
       'devDependencies.@nomiclabs/hardhat-waffle': '^2.0.1',
       'devDependencies.chai': '^4.2.0',
       'devDependencies.ethereum-waffle': '^3.2.1',
+      'devDependencies.gh-pages': '^3.2.3',
       'devDependencies.jest': '26.6.3',
       'devDependencies.react-test-renderer': '17.0.1',
       'devDependencies.ts-node': '9.1.1',
