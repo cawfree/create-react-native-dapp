@@ -391,7 +391,7 @@ const preparePackage = (ctx: createContext) =>
       'scripts.web:deploy': 'expo build:web && gh-pages -d web-build',
       // dependencies
       'dependencies.@react-native-async-storage/async-storage': '1.13.4',
-      'dependencies.@walletconnect/react-native-dapp': '1.5.2',
+      'dependencies.@walletconnect/react-native-dapp': '1.6.1',
       'dependencies.react-native-svg': '12.1.0',
       'dependencies.base-64': '1.0.0',
       'dependencies.buffer': '6.0.3',
