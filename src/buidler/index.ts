@@ -416,6 +416,7 @@ const preparePackage = (ctx: createContext) =>
       'devDependencies.platform-detect': '3.0.1',
       'devDependencies.@typescript-eslint/eslint-plugin': '^4.0.1',
       'devDependencies.@typescript-eslint/parser': '^4.0.1',
+      'devDependencies.@openzeppelin/contracts': '^4.3.0',
       'devDependencies.eslint': '^7.8.0',
       'devDependencies.eslint-config-prettier': '^6.11.0',
       'devDependencies.eslint-plugin-eslint-comments': '^3.2.0',
