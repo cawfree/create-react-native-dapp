@@ -392,7 +392,7 @@ const preparePackage = (ctx: createContext) =>
       // dependencies
       'dependencies.@react-native-async-storage/async-storage': '1.13.4',
       'dependencies.@walletconnect/react-native-dapp': '1.6.1',
-      'dependencies.react-native-svg': '12.1.0',
+      'dependencies.react-native-svg': '9.6.4',
       'dependencies.base-64': '1.0.0',
       'dependencies.buffer': '6.0.3',
       'dependencies.node-libs-browser': '2.2.1',
