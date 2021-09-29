@@ -5,8 +5,8 @@ export enum CreationStatus {
 
 export type createParams = {
   readonly name: string;
-  readonly bundleIdentifier: string;
-  readonly packageName: string;
+  //readonly bundleIdentifier: string;
+  //readonly packageName: string;
   readonly uriScheme: string;
 };
 

@@ -28,13 +28,13 @@ MMMMMMMMMMMMMMMMMMMMMMNOl:dXMMMMMMMMMMMMMMMMMMMMMM
 MMMMMMMMMMMMMMMMMMMMMMMWXXNMMMMMMMMMMMMMMMMMMMMMMM
 `.trim();
 
-function validateBundleId(value: string): boolean {
-  return /^[a-zA-Z][a-zA-Z0-9\-.]+$/.test(value);
-}
-
-function validatePackage(value: string): boolean {
-  return /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(value);
-}
+//function validateBundleId(value: string): boolean {
+//  return /^[a-zA-Z][a-zA-Z0-9\-.]+$/.test(value);
+//}
+//
+//function validatePackage(value: string): boolean {
+//  return /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(value);
+//}
 
 function validateUriScheme(value: string): boolean {
   return /^[a-z0-9]+$/.test(value);
@@ -56,8 +56,8 @@ function validateUriScheme(value: string): boolean {
 
   const {
     name,
-    bundleIdentifier,
-    packageName,
+    //bundleIdentifier,
+    //packageName,
     uriScheme,
   } = await prompts([
     {
@@ -80,37 +80,37 @@ function validateUriScheme(value: string): boolean {
         return true;
       },
     },
-    {
-      type: 'text',
-      name: 'bundleIdentifier',
-      message: 'What is the iOS bundle identifier?',
-      initial: 'com.myreactdapp',
-      validate: (value) => {
-        if (!validateBundleId(value)) {
-          return `Only alphanumeric characters, '.', '-', and '_' are allowed, and each '.' must be followed by a letter.`;
-        }
-        return true;
-      },
-    },
-    {
-      type: 'text',
-      name: 'packageName',
-      message: 'What is the Android package name?',
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      initial: (last) => {
-        if (!validatePackage(last)) {
-          return undefined;
-        }
-        return last;
-      },
-      validate: (value) => {
-        if (!validatePackage(value)) {
-          return `Only alphanumeric characters, '.' and '_' are allowed, and each '.' must be followed by a letter.`;
-        }
-        return true;
-      },
-    },
+    //{
+    //  type: 'text',
+    //  name: 'bundleIdentifier',
+    //  message: 'What is the iOS bundle identifier?',
+    //  initial: 'com.myreactdapp',
+    //  validate: (value) => {
+    //    if (!validateBundleId(value)) {
+    //      return `Only alphanumeric characters, '.', '-', and '_' are allowed, and each '.' must be followed by a letter.`;
+    //    }
+    //    return true;
+    //  },
+    //},
+    //{
+    //  type: 'text',
+    //  name: 'packageName',
+    //  message: 'What is the Android package name?',
+    //  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //  // @ts-ignore
+    //  initial: (last) => {
+    //    if (!validatePackage(last)) {
+    //      return undefined;
+    //    }
+    //    return last;
+    //  },
+    //  validate: (value) => {
+    //    if (!validatePackage(value)) {
+    //      return `Only alphanumeric characters, '.' and '_' are allowed, and each '.' must be followed by a letter.`;
+    //    }
+    //    return true;
+    //  },
+    //},
     {
       type: 'text',
       name: 'uriScheme',
@@ -127,8 +127,8 @@ function validateUriScheme(value: string): boolean {
 
   const { status, message } = await create({
     name,
-    bundleIdentifier,
-    packageName,
+    //bundleIdentifier,
+    //packageName,
     uriScheme,
   });
 

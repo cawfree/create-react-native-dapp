@@ -416,13 +416,12 @@ const preparePackage = (ctx: createContext) =>
       'dependencies.react-native-get-random-values': '1.5.0',
       'dependencies.react-native-stream': '0.1.9',
       'dependencies.web3': '1.3.1',
-
-      'devDependencies.babel-jest': '27.2.3',
       'devDependencies.@babel/core': '7.15.5',
+      'devDependencies.@babel/plugin-proposal-private-property-in-object': '7.15.4',
       'devDependencies.@babel/preset-env': '7.15.6',
       'devDependencies.@babel/preset-typescript': '7.15.0',
-
       'devDependencies.app-root-path': '3.0.0',
+      'devDependencies.babel-jest': '27.2.3',
       'devDependencies.chokidar': '3.5.1',
       'devDependencies.commitizen': '4.2.3',
       'devDependencies.cz-conventional-changelog': '^3.2.0',
@@ -513,6 +512,7 @@ module.exports = function(api) {
       '@babel/preset-typescript',
     ],
     plugins: [
+      ['@babel/plugin-proposal-private-property-in-object', {loose: true}],
       ['module:react-native-dotenv'],
     ],
   };
