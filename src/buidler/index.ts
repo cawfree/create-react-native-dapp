@@ -241,14 +241,28 @@ const createScripts = (ctx: createContext) => {
     `
 import 'dotenv/config';
 import * as child_process from 'child_process';
-// If you end up ejecting from Expo, you'll thank me.  😜
-//import {macos} from 'platform-detect';
+
+// Uncommment to rename the application binaries on postinstall.
+//const {APP_DISPLAY_NAME} = process.env;
+//child_process.execSync(
+//  \`npx react-native-rename \${APP_DISPLAY_NAME}\`,
+//  {stdio: 'inherit'}
+//);
+
+// Uncommment to regenerate the application icon on postinstall.
+//child_process.execSync(
+//  'npx app-icon generate -i assets/image/app-icon.png --platforms=android,ios',
+//  {stdio: 'inherit'}
+//);
 
 child_process.execSync('npx patch-package', { stdio: 'inherit' });
 
+// Uncomment to reinstall pods on postinstall.
+// import {macos} from 'platform-detect';
 // if (macos) {
 //   child_process.execSync('npx pod-install', { stdio: 'inherit' });
 // }
+
     `.trim()
   );
 
@@ -316,6 +330,7 @@ child_process.execSync('expo web & npx hardhat node --hostname 0.0.0.0 &', opts)
 const getAllEnvVariables = (ctx: createContext): EnvVariables => {
   const { hardhat: { hardhatAccounts } } = ctx;
   return [
+    ['APP_DISPLAY_NAME', 'string', `${ctx.name}`],
     ['HARDHAT_PORT', 'string', `${port}`],
     ['HARDHAT_PRIVATE_KEY', 'string', hardhatAccounts[0].privateKey],
   ];
