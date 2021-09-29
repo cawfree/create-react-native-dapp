@@ -395,6 +395,7 @@ const preparePackage = (ctx: createContext) =>
         'react-native-web',
       ],
       // scripts
+      'scripts.audit': `${ctx.yarn ? '' : 'npm_config_yes=true '}npx yarn-audit-fix`,
       'scripts.postinstall': 'node_modules/.bin/ts-node scripts/postinstall',
       'scripts.test': 'npx hardhat test && jest',
       'scripts.android': 'node_modules/.bin/ts-node scripts/android',

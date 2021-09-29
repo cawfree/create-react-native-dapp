@@ -26,6 +26,7 @@
     "blockchain"
   ],
   "scripts": {
+    "audit": "npx yarn-audit-fix",
     "build": "run-p build:* && cp -rf src/assets build/main/ && sudo chmod +x build/main/cli/index.js",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
