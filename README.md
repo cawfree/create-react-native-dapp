@@ -13,6 +13,8 @@
 
 Our goal is to help create a sustainable open source ecosystem for [`Web3`](https://github.com/ethereum/web3.js/) in React Native by providing a dependable common runtime which we can _buidl_ upon and extend **together**.
 
+Watch us shill `create-react-native-dapp` [here](https://www.youtube.com/watch?v=Y1_37f9cseQ).
+
 ### 🔥 Features
 
 - 🚀 **Bootstrapped by Expo.**
@@ -34,6 +36,7 @@ Our goal is to help create a sustainable open source ecosystem for [`Web3`](http
 First, [please make sure](https://forums.expo.io/t/newly-created-app-crashes-on-ios-sim/45566) you've logged into [`expo-cli`](https://docs.expo.io/workflow/expo-cli/).
 
 ```
+npm install -g expo-cli
 npx create-react-native-dapp
 ```
 
