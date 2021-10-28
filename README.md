@@ -49,26 +49,6 @@ cd my-react-dapp
 yarn ios # android, web
 ```
 
-## To programmatically invoke,
-
-[`create-react-native-dapp`](https://github.com/cawfree/create-react-native-dapp) also exports a simple interface for the programmatic allocation of new projects.
-
-```ts
-import { create } from 'create-react-native-dapp';
-
-(async () => {
-  const name = 'my-react-dapp';
-  const bundleIdentifier = 'io.github.cawfree.dapp';
-  const uriScheme = 'myapp'; // navigate using myapp://some/path
-  const { dir } = await create({
-    name,
-    bundleIdentifer,
-    packageName: bundleIdentifier,
-    uriScheme,
-  });
-})();
-```
-
 ## ✌️ License
 
 [**MIT**](./LICENSE)
