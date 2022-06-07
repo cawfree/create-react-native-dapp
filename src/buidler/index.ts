@@ -651,8 +651,8 @@ const shouldPrepareExample = (ctx: createContext) => {
     testsDir,
     srcDir,
     hardhat: {
-     hardhatConfig,
-     hardhatAccounts,
+      hardhatConfig,
+      hardhatAccounts,
     },
   } = ctx;
 
@@ -890,6 +890,37 @@ To compile and run your project in development, execute one of the following com
   `.trim();
 };
 
+
+const addPatches = (ctx: createContext) => {
+    const { projectDir } = ctx;
+
+    /**
+     * Patch for react-native-get-random-values header file to match expected syntax from Expo SDK 44.0.0 and above
+     * ref: https://github.com/expo/expo/issues/15649
+     */
+    const patches = path.resolve(projectDir, 'patches');
+    const randomValuesLibPatch = path.resolve(patches, 'react-native-get-random-values+1.5.0.patch');
+    fs.writeFileSync(
+      randomValuesLibPatch,
+      `
+diff --git a/node_modules/react-native-get-random-values/ios/RNGetRandomValues.h b/node_modules/react-native-get-random-values/ios/RNGetRandomValues.h
+index a6d39c4..b88e04a 100644
+--- a/node_modules/react-native-get-random-values/ios/RNGetRandomValues.h
++++ b/node_modules/react-native-get-random-values/ios/RNGetRandomValues.h
+@@ -1,8 +1,4 @@
+-#if __has_include("RCTBridgeModule.h")
+-#import "RCTBridgeModule.h"
+-#else
+ #import <React/RCTBridgeModule.h>
+-#endif
+
+ @interface RNGetRandomValues : NSObject <RCTBridgeModule>
+ -(NSString*)getRandomBase64:(NSUInteger)byteLength;
+    `.trim()
+    )
+
+
+  }
 export const create = async (params: createParams): Promise<createResult> => {
   createBaseProject(params);
 
@@ -918,6 +949,7 @@ export const create = async (params: createParams): Promise<createResult> => {
   shouldWriteEnv(ctx);
   shouldInstall(ctx);
   shouldPrepareExample(ctx);
+  addPatches(ctx);
 
   return Object.freeze({
     ...ctx,
